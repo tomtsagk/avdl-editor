@@ -1,0 +1,24 @@
+# menu world
+(class world_editor dd_world
+	(group
+
+	# font
+	(def avdl_font font)
+
+	# view camera
+	(def dd_vec3 camera_position)
+
+	# default grid
+	(def avdl_mesh grid)
+
+	(function void create ())
+	(function void onload ())
+	(function void resize ())
+	(function void update (group float dt))
+	(function void draw ())
+	(function void key_input (group char key))
+	(function void mouse_input (group int button int type))
+	(function void clean ())
+
+	)
+) # menu game

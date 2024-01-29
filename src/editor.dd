@@ -1,0 +1,75 @@
+(include "editor.ddh")
+
+(class_function world_editor void create ()
+	(group
+
+	(avdl_engine_setFPS 120)
+	(avdl_engine_setVSync 1)
+
+	# default font
+	(this.font.set (asset "assets/nishiki_teki.ttf" DD_PLY) 4)
+
+	#(dd_clearColour 0.5 0.2 0.3 1.0)
+	#(dd_clearColour 0.351 0.622 0.793 1.0)
+	(dd_clearColour 0.5 0.1 0.2 1.0)
+
+	# default camera
+	(this.camera_position.setf 0 1 5)
+
+	# grid
+	(this.grid.set_primitive AVDL_PRIMITIVE_RECTANGLE)
+	(this.grid.set_colour 0.1 0.5 0.1)
+
+	)
+)
+
+(class_function world_editor void onload ()
+	(group
+	)
+)
+
+(class_function world_editor void resize ()
+	(group
+	)
+)
+
+(class_function world_editor void update (group float dt)
+	(group
+	)
+) # update
+
+(class_function world_editor void draw ()
+	(group
+
+	# camera
+	(dd_translatef
+		(* (dd_vec3_getX this.camera_position) -1)
+		(* (dd_vec3_getY this.camera_position) -1)
+		(* (dd_vec3_getZ this.camera_position) -1)
+	)
+
+	# grid
+	(dd_matrix_push)
+	(dd_rotatef -90 1 0 0)
+	(this.grid.draw)
+	(dd_matrix_pop)
+
+	# scene ?
+
+	)
+)
+
+(class_function world_editor void key_input (group char key)
+	(group
+	)
+)
+
+(class_function world_editor void clean ()
+	(group
+	)
+)
+
+(class_function world_editor void mouse_input (group int button int type)
+	(group
+	)
+) # mouse input

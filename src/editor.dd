@@ -15,6 +15,14 @@
 
 	# default camera
 	(this.camera_position.setf 0 1 5)
+	(this.camera_rotation.setf 0 0 0)
+
+	(dd_matrix_identity this.camera_transform)
+	(dd_matrix_identity this.camera_transform_rot)
+
+	(= this.mouse_pressed 0)
+	(= this.mouse_pin_x -1)
+	(= this.mouse_pin_y -1)
 
 	# grid
 	(this.grid.set_primitive AVDL_PRIMITIVE_RECTANGLE)
@@ -35,6 +43,26 @@
 
 (class_function world_editor void update (group float dt)
 	(group
+
+	# mouse is being pressed
+	(if this.mouse_pressed
+		(group
+
+		# calculate mouse distance
+		(def float diffx)
+		(def float diffy)
+		(= diffx (- (dd_mouse_x) this.mouse_pin_x))
+		(= diffy (- (dd_mouse_y) this.mouse_pin_y))
+
+		# rotate view based on mouse movement
+		(this.ViewRotate (* diffx 0.1) (* diffy -0.1))
+
+		# save new mouse position
+		(= this.mouse_pin_x (dd_mouse_x))
+		(= this.mouse_pin_y (dd_mouse_y))
+
+		)
+	)
 	)
 ) # update
 
@@ -42,6 +70,14 @@
 	(group
 
 	# camera
+	(dd_rotatef (dd_vec3_getX this.camera_rotation) -1 0 0)
+	(dd_rotatef (dd_vec3_getY this.camera_rotation) 0 1 0)
+#	(dd_rotatef
+#		1
+#		(dd_vec3_getX this.camera_rotation)
+#		(dd_vec3_getY this.camera_rotation)
+#		(dd_vec3_getZ this.camera_rotation)
+#	)
 	(dd_translatef
 		(* (dd_vec3_getX this.camera_position) -1)
 		(* (dd_vec3_getY this.camera_position) -1)
@@ -49,10 +85,21 @@
 	)
 
 	# grid
-	(dd_matrix_push)
-	(dd_rotatef -90 1 0 0)
-	(this.grid.draw)
-	(dd_matrix_pop)
+	(for (def int i 0) (< i 50) (= i (+ i 1))
+	(for (def int j 0) (< j 50) (= j (+ j 1))
+		(group
+		(dd_matrix_push)
+		(dd_translatef
+			(+ -5 (* i 2))
+			-1
+			(+ -5 (* j 2))
+		)
+		(dd_rotatef -90 1 0 0)
+		#(dd_scalef 10 10 10)
+		(this.grid.draw)
+		(dd_matrix_pop)
+		)
+	))
 
 	# scene ?
 
@@ -61,6 +108,27 @@
 
 (class_function world_editor void key_input (group char key)
 	(group
+	(if (||
+		(&& (== AVDL_VR 0) (== key 27))
+		(&& (== AVDL_VR 1) (== key AVDL_INPUT_QUEST2_MENU))
+		)
+		(avdl_exit)
+	# left arrow or 'a'
+	(|| (== key 1) (== key 97))
+		(this.ViewTranslate -0.1 0 0)
+	# right arrow or 'd'
+	(|| (== key 3) (== key 100))
+		(this.ViewTranslate 0.1 0 0)
+	# up arrow or 'w'
+	(|| (== key 2) (== key 119))
+		(this.ViewTranslate 0 0 -0.1)
+	# down arrow or 's'
+	(|| (== key 4) (== key 115))
+		(this.ViewTranslate 0 0 0.1)
+	# else
+		(group
+		)
+	)
 	)
 )
 
@@ -71,5 +139,74 @@
 
 (class_function world_editor void mouse_input (group int button int type)
 	(group
+
+	(if (== type DD_INPUT_MOUSE_TYPE_PRESSED)
+		(group
+		(= this.mouse_pressed 1)
+		(= this.mouse_pin_x (dd_mouse_x))
+		(= this.mouse_pin_y (dd_mouse_y))
+		)
+	(== type DD_INPUT_MOUSE_TYPE_RELEASED)
+		(group
+		(= this.mouse_pressed 0)
+		(= this.mouse_pin_x -1)
+		(= this.mouse_pin_y -1)
+		)
+	)
+
 	)
 ) # mouse input
+
+(class_function world_editor void ViewRotate (group float x float y)
+	(group
+	(dd_vec3_addf this.camera_rotation y x 0)
+#	(log "cam rot: %f %f %f"
+#		(dd_vec3_getX this.camera_rotation)
+#		(dd_vec3_getY this.camera_rotation)
+#		(dd_vec3_getZ this.camera_rotation)
+#	)
+	)
+)
+
+(class_function world_editor void ViewTranslate (group float x float y float z)
+	(group
+#	(log "cam rot: %f %f %f"
+#		(dd_vec3_getX this.camera_rotation)
+#		(dd_vec3_getY this.camera_rotation)
+#		(dd_vec3_getZ this.camera_rotation)
+#	)
+
+	# left-right
+	(def dd_matrix rot)
+	(dd_matrix_identity rot)
+	(dd_matrix_rotate rot (* (dd_vec3_getY this.camera_rotation) -1)
+		0
+		1
+		0
+	)
+	(dd_matrix_rotate rot (dd_vec3_getX this.camera_rotation)
+		1
+		0
+		0
+	)
+	(def dd_vec4 cam_rot)
+	(dd_vec4_set cam_rot
+		x
+		y
+		z
+		0
+	)
+	(dd_vec4_multiply cam_rot rot)
+#	(log "movement: %f %f %f %f"
+#		(dd_vec4_getX cam_rot)
+#		(dd_vec4_getY cam_rot)
+#		(dd_vec4_getZ cam_rot)
+#		(dd_vec4_getW cam_rot)
+#	)
+	(dd_vec3_addf this.camera_position
+		(dd_vec4_getX cam_rot)
+		(dd_vec4_getY cam_rot)
+		(dd_vec4_getZ cam_rot)
+	)
+	)
+)

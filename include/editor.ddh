@@ -7,6 +7,12 @@
 
 	# view camera
 	(def dd_vec3 camera_position)
+	(def dd_vec3 camera_rotation)
+	(def dd_matrix camera_transform)
+	(def dd_matrix camera_transform_rot)
+	(def int mouse_pressed)
+	(def int mouse_pin_x)
+	(def int mouse_pin_y)
 
 	# default grid
 	(def avdl_mesh grid)
@@ -19,6 +25,9 @@
 	(function void key_input (group char key))
 	(function void mouse_input (group int button int type))
 	(function void clean ())
+
+	(function void ViewRotate (group float x float y))
+	(function void ViewTranslate (group float x float y float z))
 
 	)
 ) # menu game

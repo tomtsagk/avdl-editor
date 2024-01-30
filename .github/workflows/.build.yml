@@ -24,6 +24,7 @@ jobs:
         #itchio_user: afloofdev
         #itchio_project: test_project
     secrets:
+        AVDL_NO_VALUE: 0
         # required for android
         #ANDROID_KEYSTORE: ${{ secrets.KEYSTORE }}
         #ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}

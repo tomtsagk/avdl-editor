@@ -23,12 +23,12 @@ jobs:
         build_quest2_oculus: false
         #itchio_user: afloofdev
         #itchio_project: test_project
-        #secrets:
+    secrets:
         # required for android
-        #ANDROID_KEYSTORE: ${{ secrets.KEYSTORE }}
-        #ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        ANDROID_KEYSTORE: ${{ secrets.KEYSTORE }}
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         # required for quest 2
-        #OCULUS_API_LINK: ${{ secrets.OCULUS_API_LINK }}
+        OCULUS_API_LINK: ${{ secrets.OCULUS_API_LINK }}
         # required for oculus
         #OCULUS_PROJECT_ID: ${{ secrets.OCULUS_PROJECT_ID }}
         # required for itchio release

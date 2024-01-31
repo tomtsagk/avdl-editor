@@ -1,4 +1,6 @@
-# menu world
+(include "button.ddh")
+
+# visual editor
 (class world_editor dd_world
 	(group
 
@@ -17,6 +19,11 @@
 	# default grid
 	(def avdl_mesh grid)
 
+	# test button
+	(def int selection)
+	(def int buttonTotal)
+	(def Button button[5])
+
 	(function void create ())
 	(function void onload ())
 	(function void resize ())
@@ -30,4 +37,4 @@
 	(function void ViewTranslate (group float x float y float z))
 
 	)
-) # menu game
+) # world editor

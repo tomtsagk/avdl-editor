@@ -10,7 +10,7 @@ on:
 
 jobs:
   avdl:
-    uses: tomtsagk/avdl/.github/workflows/.compile_avdl_project.yml@19566022f4187ac8e83cbcee910300fd248ae39e
+    uses: tomtsagk/avdl/.github/workflows/.compile_avdl_project.yml@814e7da99e803e438f1d1dd6f707e2c44eb0584b
     with:
         project_name: avdl_editor
         build_android: true

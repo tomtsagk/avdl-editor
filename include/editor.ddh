@@ -24,6 +24,10 @@
 	(def int buttonTotal)
 	(def Button button[5])
 
+	# test hierarchy
+	(def dd_dynamic_array hierarchy)
+	(def avdl_mesh testCube)
+
 	(function void create ())
 	(function void onload ())
 	(function void resize ())

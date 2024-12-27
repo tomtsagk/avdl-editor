@@ -7,6 +7,9 @@
 	# font
 	(def avdl_font font)
 
+	(def string skybox_texture[6])
+	(def avdl_skybox skybox)
+
 	# view camera
 	(def dd_vec3 camera_position)
 	(def dd_vec3 camera_rotation)
@@ -15,6 +18,12 @@
 	(def int mouse_pressed)
 	(def int mouse_pin_x)
 	(def int mouse_pin_y)
+
+	# camera movements
+	(int walksForward)
+	(int walksRight)
+	(int walksBack)
+	(int walksLeft)
 
 	# default grid
 	(def avdl_mesh grid)
@@ -27,14 +36,16 @@
 	# test hierarchy
 	(def dd_dynamic_array hierarchy)
 	(def avdl_mesh testCube)
+	(def avdl_node hierarchy2)
+
+	# hierarchy UI
 
 	(function void create ())
 	(function void onload ())
 	(function void resize ())
 	(function void update (group float dt))
 	(function void draw ())
-	(function void key_input (group char key))
-	(function void mouse_input (group int button int type))
+	(function void input (group int button int type))
 	(function void clean ())
 
 	(function void ViewRotate (group float x float y))

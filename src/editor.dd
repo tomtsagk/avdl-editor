@@ -9,6 +9,31 @@
 	# default font
 	(this.font.set (asset "assets/nishiki_teki.ttf" DD_PLY) 4)
 
+	#(for (def int i 0) (< i 6) (= i (+ i 1))
+	#	(= this.skybox_texture[i] "assets/icon_64x64.png")
+	#)
+#	(= this.skybox_texture[0] "assets/skybox_right_flip.png")
+#	(= this.skybox_texture[1] "assets/skybox_left_flip.png")
+#	(= this.skybox_texture[2] "assets/skybox_top_flip.png")
+#	(= this.skybox_texture[3] "assets/skybox_bottom_flip.png")
+#	(= this.skybox_texture[5] "assets/skybox_back_flip.png")
+#	(= this.skybox_texture[4] "assets/skybox_front_flip.png")
+
+#	(= this.skybox_texture[0] "assets/stormydays_right_flip.png")
+#	(= this.skybox_texture[1] "assets/stormydays_left_flip.png")
+#	(= this.skybox_texture[2] "assets/stormydays_top_flep.png")
+#	(= this.skybox_texture[3] "assets/stormydays_bottom_flep.png")
+#	(= this.skybox_texture[5] "assets/stormydays_front_flip.png")
+#	(= this.skybox_texture[4] "assets/stormydays_back_flip.png")
+
+	(= this.skybox_texture[0] "assets/interstellar_right_flip.png")
+	(= this.skybox_texture[1] "assets/interstellar_left_flip.png")
+	(= this.skybox_texture[2] "assets/interstellar_top_flep.png")
+	(= this.skybox_texture[3] "assets/interstellar_bottom_flip.png")
+	(= this.skybox_texture[5] "assets/interstellar_front_flip.png")
+	(= this.skybox_texture[4] "assets/interstellar_back_flip.png")
+	(this.skybox.set this.skybox_texture)
+
 	#(dd_clearColour 0.5 0.2 0.3 1.0)
 	#(dd_clearColour 0.351 0.622 0.793 1.0)
 	(dd_clearColour 0.5 0.1 0.2 1.0)
@@ -53,6 +78,11 @@
 
 	(this.testCube.set_primitive AVDL_PRIMITIVE_RECTANGLE)
 	(this.testCube.set_colour 0.5 1.0 0.5)
+
+	(= this.walksForward 0)
+	(= this.walksRight 0)
+	(= this.walksBack 0)
+	(= this.walksLeft 0)
 
 	)
 )
@@ -113,11 +143,28 @@
 		(this.ViewTranslate 0 0 0.1)
 	)
 
+	# left arrow or 'a'
+	(if this.walksLeft (this.ViewTranslate -0.1 0 0))
+	# right arrow or 'd'
+	(if this.walksRight (this.ViewTranslate 0.1 0 0))
+	# up arrow or 'w'
+	(if this.walksForward (this.ViewTranslate 0 0 -0.1))
+	# down arrow or 's'
+	(if this.walksBack (this.ViewTranslate 0 0 0.1))
+
 	)
 ) # update
 
 (class_function world_editor void draw ()
 	(group
+
+	# skybox
+	(dd_matrix_push)
+	(dd_rotatef (dd_vec3_getX this.camera_rotation) -1 0 0)
+	(dd_rotatef (dd_vec3_getY this.camera_rotation) 0 1 0)
+	(this.skybox.draw)
+	(dd_matrix_pop)
+	(avdl_graphics_ClearDepth)
 
 	(dd_matrix_push)
 
@@ -164,6 +211,7 @@
 		(dd_matrix_pop)
 		)
 	)
+
 	(dd_matrix_pop)
 
 	(avdl_graphics_ClearDepth)
@@ -187,41 +235,14 @@
 	)
 )
 
-(class_function world_editor void key_input (group char key)
-	(group
-	(if (||
-		(&& (== AVDL_VR 0) (== key 27))
-		(&& (== AVDL_VR 1) (== key AVDL_INPUT_QUEST2_MENU))
-		)
-		(avdl_exit)
-	# left arrow or 'a'
-	(|| (== key 1) (== key 97))
-		(this.ViewTranslate -0.1 0 0)
-	# right arrow or 'd'
-	(|| (== key 3) (== key 100))
-		(this.ViewTranslate 0.1 0 0)
-	# up arrow or 'w'
-	(|| (== key 2) (== key 119))
-		(this.ViewTranslate 0 0 -0.1)
-	# down arrow or 's'
-	(|| (== key 4) (== key 115))
-		(this.ViewTranslate 0 0 0.1)
-	# else
-		(group
-		)
-	)
-	)
-)
-
 (class_function world_editor void clean ()
 	(group
 	)
 )
 
-(class_function world_editor void mouse_input (group int button int type)
-	(group
+(class_function world_editor void input (group int button int type) {
 
-	(if (== type DD_INPUT_MOUSE_TYPE_PRESSED)
+	(if (== type AVDL_INPUT_STATE_DOWN)
 		(group
 
 		# button pressed
@@ -241,20 +262,30 @@
 		)
 
 		)
-	(== type DD_INPUT_MOUSE_TYPE_RELEASED)
+	(== type AVDL_INPUT_STATE_UP)
 		(group
 
 		# just clicked cube
 		(if (== this.selection 2)
 			(group
-			(def ref dd_matrix m)
-			(dd_da_pushEmpty this.hierarchy)
-			(= m (dd_da_get this.hierarchy (- (dd_da_count this.hierarchy) 1)))
-			(dd_matrix_identity m)
-			(dd_matrix_translate m (* 1 (dd_da_count this.hierarchy)) 0 0)
+			(def ref avdl_node child)
+			(= child (this.hierarchy2.AddChild))
+
+			(def ref avdl_transform t)
+			(= t (child.GetLocalTransform child))
+			(t.SetPosition3f t 0 0 0)
+
+#			(def ref dd_matrix m)
+#			(dd_da_pushEmpty this.hierarchy)
+#			(= m (dd_da_get this.hierarchy (- (dd_da_count this.hierarchy) 1)))
+#			(dd_matrix_identity m)
+#			(dd_matrix_translate m (* 1 (dd_da_count this.hierarchy)) 0 0)
 			(echo "added cube")
 			)
-		)
+		(== this.selection 0) {
+			(log "forward")
+			#(avdl_node_NodeToJson 
+		})
 
 		# reset input
 		(= this.selection -1)
@@ -264,8 +295,45 @@
 		)
 	)
 
+	(if (||
+		(&& (== AVDL_VR 0) (== button 27))
+		(&& (== AVDL_VR 1) (== button AVDL_INPUT_QUEST2_MENU))
+		)
+		(avdl_exit)
+	# left arrow or 'a'
+	(|| (== button 1) (== button 97))
+		(if (== type AVDL_INPUT_STATE_DOWN)
+			(= this.walksLeft 1)
+		(== type AVDL_INPUT_STATE_UP)
+			(= this.walksLeft 0)
+		)
+	# right arrow or 'd'
+	(|| (== button 3) (== button 100))
+		(if (== type AVDL_INPUT_STATE_DOWN)
+			(= this.walksRight 1)
+		(== type AVDL_INPUT_STATE_UP)
+			(= this.walksRight 0)
+		)
+	# up arrow or 'w'
+	(|| (== button 2) (== button 119))
+		(if (== type AVDL_INPUT_STATE_DOWN)
+			(= this.walksForward 1)
+		(== type AVDL_INPUT_STATE_UP)
+			(= this.walksForward 0)
+		)
+	# down arrow or 's'
+	(|| (== button 4) (== button 115))
+		(if (== type AVDL_INPUT_STATE_DOWN)
+			(= this.walksBack 1)
+		(== type AVDL_INPUT_STATE_UP)
+			(= this.walksBack 0)
+		)
+	# else
+		(group
+		)
 	)
-) # mouse input
+
+}) # input
 
 (class_function world_editor void ViewRotate (group float x float y)
 	(group

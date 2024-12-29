@@ -84,8 +84,12 @@
 	(= this.walksBack 0)
 	(= this.walksLeft 0)
 
+	(avdl_node_JsonToNode "test.json" this.hierarchy2)
+
+	(avdl_node_print this.hierarchy2)
+
 	(dd_da_initStructRef this.mesh_component_array avdl_component_mesh)
-        #(avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
+        (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
 
 	)
 )
@@ -301,6 +305,8 @@
 
 			(dd_da_empty this.mesh_component_array)
 		        (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
+
+			(avdl_node_NodeToJson this.hierarchy2 "test.json")
 
 #			(def int components)
 #			(= components (dd_da_count this.mesh_component_array))

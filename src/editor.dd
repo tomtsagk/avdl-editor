@@ -84,6 +84,9 @@
 	(= this.walksBack 0)
 	(= this.walksLeft 0)
 
+	(dd_da_initStructRef this.mesh_component_array avdl_component_mesh)
+        #(avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
+
 	)
 )
 
@@ -212,6 +215,20 @@
 		)
 	)
 
+	(for (int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
+
+		(def ref avdl_component_mesh mesh)
+		(= mesh (dd_da_getDeref this.mesh_component_array i))
+
+		(def ref avdl_node node)
+		(= node (mesh.GetNode mesh))
+
+		(dd_matrix_push)
+		(dd_multMatrixf (node.GetGlobalMatrix node))
+		(mesh.draw mesh)
+		(dd_matrix_pop)
+	})
+
 	(dd_matrix_pop)
 
 	(avdl_graphics_ClearDepth)
@@ -271,9 +288,41 @@
 			(def ref avdl_node child)
 			(= child (this.hierarchy2.AddChild))
 
+			(def int childIndex)
+			(= childIndex (this.hierarchy2.GetChildrenCount))
+
 			(def ref avdl_transform t)
 			(= t (child.GetLocalTransform child))
-			(t.SetPosition3f t 0 0 0)
+			(t.SetPosition3f t (* childIndex 1.2) 0 0)
+
+			(def ref avdl_component_mesh com_mesh)
+			(= com_mesh (avdl_node_AddComponent child avdl_component_mesh))
+			(com_mesh.after_create com_mesh)
+
+			(dd_da_empty this.mesh_component_array)
+		        (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
+
+#			(def int components)
+#			(= components (dd_da_count this.mesh_component_array))
+#			(log "found %d components" components)
+#
+#			(avdl_node_print this.hierarchy2)
+#			(for (def int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
+#				(log "mesh %d %x %x" i (dd_da_get this.mesh_component_array i) (dd_da_getDeref this.mesh_component_array i))
+#
+#				(def ref avdl_component_mesh mesh)
+#				(= mesh (dd_da_getDeref this.mesh_component_array i))
+#
+##				(log "got mesh: %x" (dd_da_getDeref this.mesh_component_array i))
+#
+##				(def ref avdl_node node)
+##				(= node (mesh.GetNode mesh)) # PROBLEM IS HERE
+##
+##				#(dd_matrix_push)
+##				(dd_multMatrixf (node.GetGlobalMatrix node))
+##				(mesh.draw mesh)
+##				#(dd_matrix_pop)
+#			})
 
 #			(def ref dd_matrix m)
 #			(dd_da_pushEmpty this.hierarchy)

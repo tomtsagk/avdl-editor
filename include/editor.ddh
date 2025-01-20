@@ -18,6 +18,8 @@
 	(def int mouse_pressed)
 	(def int mouse_pin_x)
 	(def int mouse_pin_y)
+	(def ref avdl_node camera_node)
+	(def ref avdl_transform camera_transform2)
 
 	# camera movements
 	(int walksForward)
@@ -39,6 +41,11 @@
 	(def avdl_node hierarchy2)
 
 	(def dd_dynamic_array mesh_component_array)
+	(def dd_dynamic_array terrain_component_array)
+
+	# selected
+	(def ref avdl_node selected_node)
+	(def avdl_mesh selected)
 
 	# hierarchy UI
 
@@ -52,6 +59,8 @@
 
 	(function void ViewRotate (group float x float y))
 	(function void ViewTranslate (group float x float y float z))
+
+	(function void AddCameraToStage {})
 
 	)
 ) # world editor

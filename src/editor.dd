@@ -26,13 +26,13 @@
 #	(= this.skybox_texture[5] "assets/stormydays_front_flip.png")
 #	(= this.skybox_texture[4] "assets/stormydays_back_flip.png")
 
-	(= this.skybox_texture[0] "assets/interstellar_right_flip.png")
-	(= this.skybox_texture[1] "assets/interstellar_left_flip.png")
-	(= this.skybox_texture[2] "assets/interstellar_top_flep.png")
-	(= this.skybox_texture[3] "assets/interstellar_bottom_flip.png")
-	(= this.skybox_texture[5] "assets/interstellar_front_flip.png")
-	(= this.skybox_texture[4] "assets/interstellar_back_flip.png")
-	(this.skybox.set this.skybox_texture)
+#	(= this.skybox_texture[0] "assets/interstellar_right_flip.png")
+#	(= this.skybox_texture[1] "assets/interstellar_left_flip.png")
+#	(= this.skybox_texture[2] "assets/interstellar_top_flep.png")
+#	(= this.skybox_texture[3] "assets/interstellar_bottom_flip.png")
+#	(= this.skybox_texture[5] "assets/interstellar_front_flip.png")
+#	(= this.skybox_texture[4] "assets/interstellar_back_flip.png")
+#	(this.skybox.set this.skybox_texture)
 
 	#(dd_clearColour 0.5 0.2 0.3 1.0)
 	#(dd_clearColour 0.351 0.622 0.793 1.0)
@@ -52,6 +52,10 @@
 	# grid
 	(this.grid.set_primitive AVDL_PRIMITIVE_RECTANGLE)
 	(this.grid.set_colour 0.1 0.5 0.1)
+
+	# selection
+	(= this.selected_node 0)
+	(this.selected.load (asset "assets/selected.ply" DD_PLY))
 
 	# button
 	(= this.buttonTotal 3)
@@ -87,9 +91,12 @@
 	(avdl_node_JsonToNode "test.json" this.hierarchy2)
 
 	(avdl_node_print this.hierarchy2)
+	(this.AddCameraToStage)
 
 	(dd_da_initStructRef this.mesh_component_array avdl_component_mesh)
+	(dd_da_initStructRef this.terrain_component_array avdl_component_terrain)
         (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
+        (avdl_node_AddComponentsToArray this.hierarchy2 this.terrain_component_array AVDL_COMPONENT_TERRAIN_ENUM)
 
 	)
 )
@@ -150,14 +157,14 @@
 		(this.ViewTranslate 0 0 0.1)
 	)
 
-	# left arrow or 'a'
-	(if this.walksLeft (this.ViewTranslate -0.1 0 0))
-	# right arrow or 'd'
-	(if this.walksRight (this.ViewTranslate 0.1 0 0))
-	# up arrow or 'w'
-	(if this.walksForward (this.ViewTranslate 0 0 -0.1))
-	# down arrow or 's'
-	(if this.walksBack (this.ViewTranslate 0 0 0.1))
+	(float move_x 0)
+	(float move_z 0)
+	(if this.walksLeft (+= move_x 0.1))
+	(if this.walksRight (-= move_x 0.1))
+	(if this.walksForward (-= move_z 0.1))
+	(if this.walksBack (+= move_z 0.1))
+
+	(this.ViewTranslate move_x 0 move_z)
 
 	)
 ) # update
@@ -165,30 +172,31 @@
 (class_function world_editor void draw ()
 	(group
 
-	# skybox
-	(dd_matrix_push)
-	(dd_rotatef (dd_vec3_getX this.camera_rotation) -1 0 0)
-	(dd_rotatef (dd_vec3_getY this.camera_rotation) 0 1 0)
-	(this.skybox.draw)
-	(dd_matrix_pop)
-	(avdl_graphics_ClearDepth)
+#	# skybox
+#	(dd_matrix_push)
+#	(dd_rotatef (dd_vec3_getX this.camera_rotation) -1 0 0)
+#	(dd_rotatef (dd_vec3_getY this.camera_rotation) 0 1 0)
+#	(this.skybox.draw)
+#	(dd_matrix_pop)
+#	(avdl_graphics_ClearDepth)
 
 	(dd_matrix_push)
 
 	# camera
-	(dd_rotatef (dd_vec3_getX this.camera_rotation) -1 0 0)
-	(dd_rotatef (dd_vec3_getY this.camera_rotation) 0 1 0)
-#	(dd_rotatef
-#		1
-#		(dd_vec3_getX this.camera_rotation)
-#		(dd_vec3_getY this.camera_rotation)
-#		(dd_vec3_getZ this.camera_rotation)
+	(dd_multMatrixf_camera (this.camera_node.GetGlobalInverseMatrix))
+#	(dd_rotatef (dd_vec3_getX this.camera_rotation) -1 0 0)
+#	(dd_rotatef (dd_vec3_getY this.camera_rotation) 0 1 0)
+##	(dd_rotatef
+##		1
+##		(dd_vec3_getX this.camera_rotation)
+##		(dd_vec3_getY this.camera_rotation)
+##		(dd_vec3_getZ this.camera_rotation)
+##	)
+#	(dd_translatef
+#		(* (dd_vec3_getX this.camera_position) -1)
+#		(* (dd_vec3_getY this.camera_position) -1)
+#		(* (dd_vec3_getZ this.camera_position) -1)
 #	)
-	(dd_translatef
-		(* (dd_vec3_getX this.camera_position) -1)
-		(* (dd_vec3_getY this.camera_position) -1)
-		(* (dd_vec3_getZ this.camera_position) -1)
-	)
 
 	# grid
 	(for (def int i 0) (< i 50) (= i (+ i 1))
@@ -207,18 +215,19 @@
 		)
 	))
 
-	# hierarchy
-	(for (def int i 0) (< i (dd_da_count this.hierarchy)) (= i (+ i 1))
-		(group
-		(dd_matrix_push)
-		(def ref dd_matrix m)
-		(= m (dd_da_get this.hierarchy i))
-		(dd_multMatrixf m)
-		(this.testCube.draw)
-		(dd_matrix_pop)
-		)
-	)
+#	# hierarchy
+#	(for (def int i 0) (< i (dd_da_count this.hierarchy)) (= i (+ i 1))
+#		(group
+#		(dd_matrix_push)
+#		(def ref dd_matrix m)
+#		(= m (dd_da_get this.hierarchy i))
+#		(dd_multMatrixf m)
+#		(this.testCube.draw)
+#		(dd_matrix_pop)
+#		)
+#	)
 
+	# meshes
 	(for (int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
 
 		(def ref avdl_component_mesh mesh)
@@ -227,9 +236,33 @@
 		(def ref avdl_node node)
 		(= node (mesh.GetNode mesh))
 
+
 		(dd_matrix_push)
 		(dd_multMatrixf (node.GetGlobalMatrix node))
+		(if (== node this.selected_node)
+			(this.selected.draw)
+		)
 		(mesh.draw mesh)
+		(dd_matrix_pop)
+	})
+
+	#(log "terrains: %d" (dd_da_count this.terrain_component_array))
+	# terrains
+	(for (int i 0) (< i (dd_da_count this.terrain_component_array)) (+= i 1) {
+
+		(def ref avdl_component_terrain terrain)
+		(= terrain (dd_da_getDeref this.terrain_component_array i))
+
+		(def ref avdl_node node)
+		(= node (terrain.GetNode terrain))
+
+
+		(dd_matrix_push)
+		(dd_multMatrixf (node.GetGlobalMatrix node))
+		(if (== node this.selected_node)
+			(this.selected.draw)
+		)
+		(terrain.draw terrain)
 		(dd_matrix_pop)
 	})
 
@@ -263,7 +296,7 @@
 
 (class_function world_editor void input (group int button int type) {
 
-	(if (== type AVDL_INPUT_STATE_DOWN)
+	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN))
 		(group
 
 		# button pressed
@@ -283,7 +316,7 @@
 		)
 
 		)
-	(== type AVDL_INPUT_STATE_UP)
+	(&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_UP))
 		(group
 
 		# just clicked cube
@@ -357,32 +390,36 @@
 		(avdl_exit)
 	# left arrow or 'a'
 	(|| (== button 1) (== button 97))
-		(if (== type AVDL_INPUT_STATE_DOWN)
+		(if (== type AVDL_INPUT_STATE_DOWN) {
 			(= this.walksLeft 1)
-		(== type AVDL_INPUT_STATE_UP)
+		}
+		(== type AVDL_INPUT_STATE_UP) {
 			(= this.walksLeft 0)
-		)
+		})
 	# right arrow or 'd'
 	(|| (== button 3) (== button 100))
-		(if (== type AVDL_INPUT_STATE_DOWN)
+		(if (== type AVDL_INPUT_STATE_DOWN) {
 			(= this.walksRight 1)
-		(== type AVDL_INPUT_STATE_UP)
+		}
+		(== type AVDL_INPUT_STATE_UP) {
 			(= this.walksRight 0)
-		)
+		})
 	# up arrow or 'w'
 	(|| (== button 2) (== button 119))
-		(if (== type AVDL_INPUT_STATE_DOWN)
+		(if (== type AVDL_INPUT_STATE_DOWN) {
 			(= this.walksForward 1)
-		(== type AVDL_INPUT_STATE_UP)
+		}
+		(== type AVDL_INPUT_STATE_UP) {
 			(= this.walksForward 0)
-		)
+		})
 	# down arrow or 's'
 	(|| (== button 4) (== button 115))
-		(if (== type AVDL_INPUT_STATE_DOWN)
+		(if (== type AVDL_INPUT_STATE_DOWN) {
 			(= this.walksBack 1)
-		(== type AVDL_INPUT_STATE_UP)
+		}
+		(== type AVDL_INPUT_STATE_UP) {
 			(= this.walksBack 0)
-		)
+		})
 	# else
 		(group
 		)
@@ -393,6 +430,10 @@
 (class_function world_editor void ViewRotate (group float x float y)
 	(group
 	(dd_vec3_addf this.camera_rotation y x 0)
+	(def dd_vec3 p)
+	(dd_vec3_set p (this.camera_transform2.GetRotation))
+	(dd_vec3_addf p y (* x -1) 0)
+	(this.camera_transform2.SetRotation p)
 #	(log "cam rot: %f %f %f"
 #		(dd_vec3_getX this.camera_rotation)
 #		(dd_vec3_getY this.camera_rotation)
@@ -409,37 +450,71 @@
 #		(dd_vec3_getZ this.camera_rotation)
 #	)
 
-	# left-right
-	(def dd_matrix rot)
-	(dd_matrix_identity rot)
-	(dd_matrix_rotate rot (* (dd_vec3_getY this.camera_rotation) -1)
-		0
-		1
-		0
+	(def dd_vec3 forward)
+	(dd_vec3_setf forward x y z)
+	(dd_vec3_rotateY forward (dd_math_dec2rad (* (dd_vec3_getY (this.camera_transform2.GetRotation)) -1)))
+	(dd_vec3_rotateX forward (dd_math_dec2rad (* (dd_vec3_getX (this.camera_transform2.GetRotation)) 1)))
+
+	(def ref dd_vec3 cam)
+	(= cam (this.camera_transform2.GetPosition))
+	(this.camera_transform2.SetPosition3f
+		(- (dd_vec3_getX cam) (dd_vec3_getX forward))
+		(+ (dd_vec3_getY cam) (dd_vec3_getY forward))
+		(+ (dd_vec3_getZ cam) (dd_vec3_getZ forward))
 	)
-	(dd_matrix_rotate rot (dd_vec3_getX this.camera_rotation)
-		1
-		0
-		0
-	)
-	(def dd_vec4 cam_rot)
-	(dd_vec4_set cam_rot
-		x
-		y
-		z
-		0
-	)
-	(dd_vec4_multiply cam_rot rot)
-#	(log "movement: %f %f %f %f"
+
+#	# left-right
+#	(def dd_matrix rot)
+#	(dd_matrix_identity rot)
+#	(dd_matrix_rotate rot (* (dd_vec3_getY this.camera_rotation) -1)
+#		0
+#		1
+#		0
+#	)
+#	(dd_matrix_rotate rot (dd_vec3_getX this.camera_rotation)
+#		1
+#		0
+#		0
+#	)
+#	(def dd_vec4 cam_rot)
+#	(dd_vec4_set cam_rot
+#		x
+#		y
+#		z
+#		0
+#	)
+#	(dd_vec4_multiply cam_rot rot)
+##	(log "movement: %f %f %f %f"
+##		(dd_vec4_getX cam_rot)
+##		(dd_vec4_getY cam_rot)
+##		(dd_vec4_getZ cam_rot)
+##		(dd_vec4_getW cam_rot)
+##	)
+#	(dd_vec3_addf this.camera_position
 #		(dd_vec4_getX cam_rot)
 #		(dd_vec4_getY cam_rot)
 #		(dd_vec4_getZ cam_rot)
-#		(dd_vec4_getW cam_rot)
 #	)
-	(dd_vec3_addf this.camera_position
-		(dd_vec4_getX cam_rot)
-		(dd_vec4_getY cam_rot)
-		(dd_vec4_getZ cam_rot)
-	)
 	)
 )
+
+(class_function world_editor void AddCameraToStage {} {
+
+	# camera
+	(= this.camera_node (this.hierarchy2.AddChild))
+	(= this.camera_transform2 (this.camera_node.GetLocalTransform))
+	(this.camera_transform2.SetPosition3f 0 3 5)
+
+	# camera lookat
+	(def ref avdl_node camera_lookat_node)
+	(= camera_lookat_node (this.camera_node.AddChild))
+	(def ref avdl_transform camera_lookat_transform)
+	(= camera_lookat_transform (camera_lookat_node.GetLocalTransform camera_lookat_node))
+	(camera_lookat_transform.SetPosition3f camera_lookat_transform 0 0 -5)
+	(camera_lookat_transform.SetScale3f camera_lookat_transform 0.2 0.2 0.2)
+	(def ref avdl_component_mesh camera_lookat_mesh)
+	(= camera_lookat_mesh (avdl_node_AddComponent camera_lookat_node avdl_component_mesh))
+	(camera_lookat_mesh.after_create camera_lookat_mesh)
+	#(= this.camera_interacteer (avdl_node_AddComponent camera_lookat_node ComponentInteracteer))
+
+})

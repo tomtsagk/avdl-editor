@@ -36,9 +36,8 @@
 	(def Button button[5])
 
 	# test hierarchy
-	(def dd_dynamic_array hierarchy)
-	(def avdl_mesh testCube)
-	(def avdl_node hierarchy2)
+	(def avdl_node hierarchy)
+	(def ref avdl_node hierarchy2)
 
 	(def dd_dynamic_array mesh_component_array)
 	(def dd_dynamic_array terrain_component_array)

@@ -77,17 +77,12 @@
 
 	(= this.selection -1)
 
-	# test hierarchy
-	(dd_da_initStruct this.hierarchy dd_matrix)
-
-	(this.testCube.set_primitive AVDL_PRIMITIVE_RECTANGLE)
-	(this.testCube.set_colour 0.5 1.0 0.5)
-
 	(= this.walksForward 0)
 	(= this.walksRight 0)
 	(= this.walksBack 0)
 	(= this.walksLeft 0)
 
+	(= this.hierarchy2 (this.hierarchy.AddChild))
 	(avdl_node_JsonToNode "test.json" this.hierarchy2)
 
 	(avdl_node_print this.hierarchy2)
@@ -97,6 +92,12 @@
 	(dd_da_initStructRef this.terrain_component_array avdl_component_terrain)
         (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
         (avdl_node_AddComponentsToArray this.hierarchy2 this.terrain_component_array AVDL_COMPONENT_TERRAIN_ENUM)
+
+	# test select first node
+	(def ref avdl_component_mesh m)
+	(= m (dd_da_getDeref this.mesh_component_array 0))
+	(def ref avdl_node node)
+	(= this.selected_node (m.GetNode m))
 
 	)
 )
@@ -214,18 +215,6 @@
 		(dd_matrix_pop)
 		)
 	))
-
-#	# hierarchy
-#	(for (def int i 0) (< i (dd_da_count this.hierarchy)) (= i (+ i 1))
-#		(group
-#		(dd_matrix_push)
-#		(def ref dd_matrix m)
-#		(= m (dd_da_get this.hierarchy i))
-#		(dd_multMatrixf m)
-#		(this.testCube.draw)
-#		(dd_matrix_pop)
-#		)
-#	)
 
 	# meshes
 	(for (int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
@@ -501,7 +490,7 @@
 (class_function world_editor void AddCameraToStage {} {
 
 	# camera
-	(= this.camera_node (this.hierarchy2.AddChild))
+	(= this.camera_node (this.hierarchy.AddChild))
 	(= this.camera_transform2 (this.camera_node.GetLocalTransform))
 	(this.camera_transform2.SetPosition3f 0 3 5)
 

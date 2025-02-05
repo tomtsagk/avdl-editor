@@ -47,6 +47,16 @@
 	(def avdl_mesh selected)
 
 	# hierarchy UI
+#	(float hierarchyOffsetY)
+#	(def avdl_ui_element testObjectButton)
+#	(int hierarchyUIButtonCount)
+#	(def avdl_ui_element hierarchyUIButton[100])
+#	(def avdl_ui_element scrollHierarchy[2])
+	(int uiButtonsCount)
+	(def avdl_ui_element uiButtons[100])
+
+	# mode
+	(int mode)
 
 	(function void create ())
 	(function void onload ())
@@ -60,6 +70,13 @@
 	(function void ViewTranslate (group float x float y float z))
 
 	(function void AddCameraToStage {})
+
+	(function void SelectNearestObject ())
+#	(function void HierarchyScrollUp ())
+#	(function void HierarchyScrollDown ())
+
+	(function void NextMode ())
+	(function void SaveScene ())
 
 	)
 ) # world editor

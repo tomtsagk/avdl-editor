@@ -99,6 +99,43 @@
 	(def ref avdl_node node)
 	(= this.selected_node (m.GetNode m))
 
+#	(= this.hierarchyUIButtonCount 5)
+#	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
+#		(this.hierarchyUIButton[i].SetAnchor 0.0 0.0)
+#		(this.hierarchyUIButton[i].SetPosition 0.5 (- -0.5 (* i 1.5)))
+#		(this.hierarchyUIButton[i].SetSize 1.0 1.0)
+#	})
+#
+#	(for (int i 0) (< i 2) (+= i 1) {
+#		(this.scrollHierarchy[i].SetAnchor 0.5 0.5)
+#		(this.scrollHierarchy[i].SetPosition (+ 0.0 (* i 1.5)) 0.0)
+#		(this.scrollHierarchy[i].SetSize 1.0 1.0)
+#	})
+#	(this.scrollHierarchy[0].SetOnClick this.HierarchyScrollUp this)
+#	(this.scrollHierarchy[1].SetOnClick this.HierarchyScrollDown this)
+#
+#	(= this.hierarchyOffsetY 0)
+
+	(= this.uiButtonsCount 3)
+	(this.uiButtons[0].SetAnchor 0.0 0.0)
+	(this.uiButtons[0].SetPosition 0.5 -0.5)
+	(this.uiButtons[0].SetSize 1.0 1.0)
+	(this.uiButtons[0].SetOnClick this.SelectNearestObject this)
+
+	# change mode
+	(this.uiButtons[1].SetAnchor 0.0 0.0)
+	(this.uiButtons[1].SetPosition 1.5 -0.5)
+	(this.uiButtons[1].SetSize 1.0 1.0)
+	(this.uiButtons[1].SetOnClick this.NextMode this)
+
+	# save scene
+	(this.uiButtons[2].SetAnchor 0.0 0.0)
+	(this.uiButtons[2].SetPosition 2.5 -0.5)
+	(this.uiButtons[2].SetSize 1.0 1.0)
+	(this.uiButtons[2].SetOnClick this.SaveScene this)
+
+	(= this.mode 0)
+
 	)
 )
 
@@ -126,11 +163,31 @@
 	(this.button[2].setProportionalWidth 0.2)
 	(this.button[2].setProportionalSize 0.8)
 	(this.button[2].resize)
+
+	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
+		(this.uiButtons[i].resize)
+	})
+#	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
+#		(this.hierarchyUIButton[i].resize)
+#	})
+#	(for (int i 0) (< i 2) (+= i 1) {
+#		(this.scrollHierarchy[i].resize)
+#	})
 	)
 )
 
 (class_function world_editor void update (group float dt)
 	(group
+
+	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
+		(this.uiButtons[i].update dt)
+	})
+#	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
+#		(this.hierarchyUIButton[i].update dt)
+#	})
+#	(for (int i 0) (< i 2) (+= i 1) {
+#		(this.scrollHierarchy[i].update dt)
+#	})
 
 	# mouse is being pressed
 	(if this.mouse_pressed
@@ -255,6 +312,7 @@
 		(dd_matrix_pop)
 	})
 
+	# camera pop
 	(dd_matrix_pop)
 
 	(avdl_graphics_ClearDepth)
@@ -273,6 +331,20 @@
 		)
 	)
 
+	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
+		(this.uiButtons[i].drawDebug)
+	})
+#	#(this.description_button.applyTransform)
+#	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
+#		(this.hierarchyUIButton[i].drawDebug)
+#	})
+#	#(dd_matrix_push)
+#	#(dd_translatef 0 this.hierarchyOffsetY 0)
+#	(for (int i 0) (< i 2) (+= i 1) {
+#		(this.scrollHierarchy[i].drawDebug)
+#	})
+#	#(dd_matrix_pop)
+
 	# scene ?
 
 	)
@@ -284,6 +356,259 @@
 )
 
 (class_function world_editor void input (group int button int type) {
+
+	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
+		(this.uiButtons[i].mouse_input button type)
+	})
+#	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
+#		(this.hierarchyUIButton[i].mouse_input button type)
+#	})
+#	(for (int i 0) (< i 2) (+= i 1) {
+#		(this.scrollHierarchy[i].mouse_input button type)
+#	})
+
+#	# test ray
+#	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN)) {
+#		(log "mouse x y: %d %d" (dd_mouse_x) (dd_mouse_y))
+#
+#		# convert mouse coordinates to float
+#		(def float mouseX)
+#		(def float mouseY)
+#		(= mouseX (dd_mouse_x))
+#		(= mouseY (dd_mouse_y))
+#
+#		(def dd_vec4 ndc)
+#		(dd_vec4_set ndc 
+#			(- (* (/ mouseX (dd_window_width )) 2.0) 1.0)
+#			(- (* (/ mouseY (dd_window_height)) 2.0) 1.0)
+#			#0
+#			#0
+#			1
+#			1
+#		)
+#		#(log "ndc x y z: %f %f %f" ndcX ndcY ndcZ)
+#		(log "ndc x y z: %f %f %f"
+#			(dd_vec4_getX ndc)
+#			(dd_vec4_getY ndc)
+#			(dd_vec4_getZ ndc)
+#		)
+#
+#		# get inverse perspective
+#		(def dd_matrix inversePerspective)
+#		(dd_matrix_copy inversePerspective dd_matrix_Perspective)
+#		(dd_matrix_inverse inversePerspective)
+#
+#		(dd_vec4_multiply ndc inversePerspective)
+#		(log "ndc after perspective x y z w: %f %f %f %f"
+#			(dd_vec4_getX ndc)
+#			(dd_vec4_getY ndc)
+#			(dd_vec4_getZ ndc)
+#			(dd_vec4_getW ndc)
+#		)
+#		(dd_vec4_set ndc
+#			(dd_vec4_getX ndc)
+#			(* (dd_vec4_getY ndc) -1)
+#			-1
+#			1
+#		)
+##		(log "ndc after set x y z w: %f %f %f %f"
+##			(dd_vec4_getX ndc)
+##			(dd_vec4_getY ndc)
+##			(dd_vec4_getZ ndc)
+##			(dd_vec4_getW ndc)
+##		)
+#		(dd_vec4_multiply ndc (this.camera_node.GetGlobalNormalMatrix))
+#		#(dd_vec4_multiplyFloat ndc (/ 1 (dd_vec4_getW ndc)))
+#		#(dd_vec4_normalise ndc)
+#
+#		(def dd_vec3 ndc_v3)
+#		(dd_vec3_setf ndc_v3
+#			(dd_vec4_getX ndc)
+#			(dd_vec4_getY ndc)
+#			(dd_vec4_getZ ndc)
+#		)
+#		(dd_vec3_normalise ndc_v3)
+#		(dd_vec4_set ndc
+#			(dd_vec4_getX ndc)
+#			(dd_vec4_getY ndc)
+#			(dd_vec4_getZ ndc)
+#			0
+#		)
+#
+#		(log "ndc result x y z w: %f %f %f %f"
+#			(dd_vec4_getX ndc)
+#			(dd_vec4_getY ndc)
+#			(dd_vec4_getZ ndc)
+#			(dd_vec4_getW ndc)
+#		)
+#		(log "ndc_v3 result x y z: %f %f %f"
+#			(dd_vec3_getX ndc_v3)
+#			(dd_vec3_getY ndc_v3)
+#			(dd_vec3_getZ ndc_v3)
+#		)
+#
+#		(def dd_vec4 cam_pos)
+#		(dd_vec4_set cam_pos 0 0 0 1)
+#		(dd_vec4_multiply cam_pos (this.camera_node.GetGlobalMatrix))
+#		(log "cam position: %f %f %f"
+#			(dd_vec3_getX cam_pos)
+#			(dd_vec3_getY cam_pos)
+#			(dd_vec3_getZ cam_pos)
+#		)
+#
+#		# meshes
+#		(for (int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
+#	
+#			(def ref avdl_component_mesh mesh)
+#			(= mesh (dd_da_getDeref this.mesh_component_array i))
+#	
+#			(def ref avdl_node node)
+#			(= node (mesh.GetNode mesh))
+#	
+#			(def dd_vec4 sphere_center)
+#			(dd_vec4_set sphere_center 0 0 0 1)
+#			(dd_vec4_multiply sphere_center (node.GetGlobalMatrix node))
+#			(float sphere_radius)
+#			(= sphere_radius 0.5)
+#
+#			(log "sphere center: %f %f %f"
+#				(dd_vec3_getX sphere_center)
+#				(dd_vec3_getY sphere_center)
+#				(dd_vec3_getZ sphere_center)
+#			)
+#	
+#			(def dd_vec4 length)
+#			(dd_vec4_setVec4 length cam_pos)
+#			(dd_vec4_substract length sphere_center)
+#	
+#			(def dd_vec4 length2)
+#			(dd_vec4_setVec4 length2 length)
+#			(dd_vec4_substractFloat length2 (* sphere_radius sphere_radius))
+#	
+#			(float b)
+#			(float c)
+#			(= b (dd_vec4_dot ndc length))
+#			(= c (- (dd_vec4_dot length length) (* sphere_radius sphere_radius)))
+#	
+#			(float result)
+#			(= result (- (* b b) c))
+#	
+#			(log "b c: %f %f" b c)
+#			(log "result: %f" result)
+#	
+#			(if (< result 0) {
+#				(log "no interaction")
+#			}
+#			(> result 0) {
+#				(log "two interactions")
+#				(= this.selected_node node)
+#			}
+#			{
+#				(log "one interaction")
+#				(= this.selected_node node)
+#			}
+#			)
+##			(dd_matrix_push)
+##			(dd_multMatrixf (node.GetGlobalMatrix node))
+##			(if (== node this.selected_node)
+##				(this.selected.draw)
+##			)
+##			(mesh.draw mesh)
+##			(dd_matrix_pop)
+#		})
+#
+##		(def dd_vec4 sphere_center)
+##		(dd_vec4_set sphere_center 0 0 0 1)
+##		(float sphere_radius)
+##		(= sphere_radius 1.0)
+##
+##		(def dd_vec4 length)
+##		(dd_vec4_setVec4 length cam_pos)
+##		(dd_vec4_substract length sphere_center)
+##
+##		(def dd_vec4 length2)
+##		(dd_vec4_setVec4 length2 length)
+##		(dd_vec4_substractFloat length2 (* sphere_radius sphere_radius))
+##
+##		(float b)
+##		(float c)
+##		(= b (dd_vec4_dot ndc length))
+##		(= c (- (dd_vec4_dot length length2)))
+##
+##		(float result)
+##		(= result (- (* b b) c))
+##
+##		(log "b c: %f %f" b c)
+##		(log "result: %f" result)
+##
+##		(if (< result 0) {
+##			(log "no interaction")
+##		}
+##		(> result 0) {
+##			(log "two interactions")
+##		}
+##		{
+##			(log "one interaction")
+##		}
+##		)
+#
+##		(def dd_vec4 length)
+##		(dd_vec4_set length
+##			(dd_vec4_getX cam_pos)
+##			(dd_vec4_getY cam_pos)
+##			(dd_vec4_getZ cam_pos)
+##			(dd_vec4_getW cam_pos)
+##		)
+##		(dd_vec4_substract length sphere_center)
+##		(log "length: %f %f %f"
+##			(dd_vec3_getX length)
+##			(dd_vec3_getY length)
+##			(dd_vec3_getZ length)
+##		)
+##
+##		(float a)
+##		(float b)
+##		(float c)
+##		(= a (dd_vec4_dot ndc ndc)) # dot rayDir rayDir
+##		(= b (* 2.0 (dd_vec4_dot cam_pos sphere_center)))
+##		(= c (- (dd_vec4_dot length length) (* sphere_radius sphere_radius)))
+##
+##		(float discriminant)
+##		(= discriminant (- (* b b) (* 4 a c)))
+##
+##		(if (< discriminant 0) {
+##			(log "no intersection: %f" discriminant)
+##		}
+##		{
+##			(float sqrtDiscriminant)
+##			(= sqrtDiscriminant (dd_math_sqrt discriminant))
+##			(float t1)
+##			(float t2)
+##			(= t1 (/ (- (* b -1) sqrtDiscriminant) (* 2.0 a)))
+##			(= t1 (/ (+ (* b -1) sqrtDiscriminant) (* 2.0 a)))
+##			(log "intersection: %f %f" t1 t2)
+##		})
+#
+#
+##		Vector3 L = subtract(rayOrigin, sphereCenter);
+##		    
+##		float a = dot(rayDir, rayDir);  // Should be 1 if rayDir is normalized
+##		float b = 2.0f * dot(rayDir, L);
+##		float c = dot(L, L) - (radius * radius);
+##				    
+##		float discriminant = (b * b) - (4 * a * c);
+##					    
+##		if (discriminant < 0) {
+##			return false; // No intersection
+##		}
+##
+##		// Compute the two possible intersection times
+##		float sqrtDiscriminant = sqrtf(discriminant);
+##		*t1 = (-b - sqrtDiscriminant) / (2.0f * a);
+##		*t2 = (-b + sqrtDiscriminant) / (2.0f * a);
+##
+##		return true;
+#	})
 
 	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN))
 		(group
@@ -327,8 +652,6 @@
 
 			(dd_da_empty this.mesh_component_array)
 		        (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
-
-			(avdl_node_NodeToJson this.hierarchy2 "test.json")
 
 #			(def int components)
 #			(= components (dd_da_count this.mesh_component_array))
@@ -423,11 +746,6 @@
 	(dd_vec3_set p (this.camera_transform2.GetRotation))
 	(dd_vec3_addf p y (* x -1) 0)
 	(this.camera_transform2.SetRotation p)
-#	(log "cam rot: %f %f %f"
-#		(dd_vec3_getX this.camera_rotation)
-#		(dd_vec3_getY this.camera_rotation)
-#		(dd_vec3_getZ this.camera_rotation)
-#	)
 	)
 )
 
@@ -439,51 +757,33 @@
 #		(dd_vec3_getZ this.camera_rotation)
 #	)
 
-	(def dd_vec3 forward)
-	(dd_vec3_setf forward x y z)
-	(dd_vec3_rotateY forward (dd_math_dec2rad (* (dd_vec3_getY (this.camera_transform2.GetRotation)) -1)))
-	(dd_vec3_rotateX forward (dd_math_dec2rad (* (dd_vec3_getX (this.camera_transform2.GetRotation)) 1)))
+	(def dd_vec4 forward)
+	(dd_vec4_set forward (* x -1) y z 1)
+	(dd_vec4_multiply forward (this.camera_node.GetGlobalNormalMatrix))
 
 	(def ref dd_vec3 cam)
 	(= cam (this.camera_transform2.GetPosition))
+
 	(this.camera_transform2.SetPosition3f
-		(- (dd_vec3_getX cam) (dd_vec3_getX forward))
-		(+ (dd_vec3_getY cam) (dd_vec3_getY forward))
-		(+ (dd_vec3_getZ cam) (dd_vec3_getZ forward))
+		(+ (dd_vec4_getX cam) (dd_vec4_getX forward))
+		(+ (dd_vec4_getY cam) (dd_vec4_getY forward))
+		(+ (dd_vec4_getZ cam) (dd_vec4_getZ forward))
 	)
 
-#	# left-right
-#	(def dd_matrix rot)
-#	(dd_matrix_identity rot)
-#	(dd_matrix_rotate rot (* (dd_vec3_getY this.camera_rotation) -1)
-#		0
-#		1
-#		0
-#	)
-#	(dd_matrix_rotate rot (dd_vec3_getX this.camera_rotation)
-#		1
-#		0
-#		0
-#	)
-#	(def dd_vec4 cam_rot)
-#	(dd_vec4_set cam_rot
-#		x
-#		y
-#		z
-#		0
-#	)
-#	(dd_vec4_multiply cam_rot rot)
-##	(log "movement: %f %f %f %f"
-##		(dd_vec4_getX cam_rot)
-##		(dd_vec4_getY cam_rot)
-##		(dd_vec4_getZ cam_rot)
-##		(dd_vec4_getW cam_rot)
-##	)
-#	(dd_vec3_addf this.camera_position
-#		(dd_vec4_getX cam_rot)
-#		(dd_vec4_getY cam_rot)
-#		(dd_vec4_getZ cam_rot)
-#	)
+	(if (&& this.selected_node (== this.mode 1)) {
+		(def ref avdl_transform selectedTransform)
+		(= selectedTransform (this.selected_node.GetLocalTransform))
+
+		(def ref dd_vec3 selectedPos)
+		(= selectedPos (selectedTransform.GetPosition selectedTransform))
+
+		(selectedTransform.SetPosition3f selectedTransform
+			(+ (dd_vec4_getX selectedPos) (dd_vec4_getX forward))
+			(+ (dd_vec4_getY selectedPos) (dd_vec4_getY forward))
+			(+ (dd_vec4_getZ selectedPos) (dd_vec4_getZ forward))
+		)
+	})
+
 	)
 )
 
@@ -506,4 +806,70 @@
 	(camera_lookat_mesh.after_create camera_lookat_mesh)
 	#(= this.camera_interacteer (avdl_node_AddComponent camera_lookat_node ComponentInteracteer))
 
+})
+
+(class_function world_editor void SelectNearestObject () {
+	(log "select nearest object")
+	(def dd_vec4 cam)
+	(dd_vec4_set cam 0 0 0 1)
+	(dd_vec4_multiply cam (this.camera_node.GetGlobalMatrix))
+	(log "cam: %f %f %f"
+		(dd_vec4_getX cam)
+		(dd_vec4_getY cam)
+		(dd_vec4_getZ cam)
+	)
+
+	(float min)
+	(= min 100)
+	(= this.selected_node 0)
+
+	(for (def int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
+		(def ref avdl_component_mesh mesh)
+		(= mesh (dd_da_getDeref this.mesh_component_array i))
+
+		(def ref avdl_node node)
+		(= node (mesh.GetNode mesh))
+
+		(def dd_vec4 n)
+		(dd_vec4_set n 0 0 0 1)
+		(dd_vec4_multiply n (node.GetGlobalMatrix node))
+
+		(def dd_vec4 distance)
+		(dd_vec4_setVec4 distance n)
+		(dd_vec4_substract distance cam)
+
+		(if (< (dd_vec4_magnitude distance) min) {
+			(= min (dd_vec4_magnitude distance))
+			(= this.selected_node node)
+		})
+
+		(log "node: %f %f %f"
+			(dd_vec4_getX n)
+			(dd_vec4_getY n)
+			(dd_vec4_getZ n)
+		)
+	})
+})
+#(class_function world_editor void HierarchyScrollUp () {
+#	(+= this.hierarchyOffsetY 0.5)
+#	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
+#		(this.hierarchyUIButton[i].SetPosition 0.5 (+ (- -0.5 (* i 1.5)) this.hierarchyOffsetY))
+#	})
+#})
+#
+#(class_function world_editor void HierarchyScrollDown () {
+#	(-= this.hierarchyOffsetY 0.5)
+#	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
+#		(this.hierarchyUIButton[i].SetPosition 0.5 (+ (- -0.5 (* i 1.5)) this.hierarchyOffsetY))
+#	})
+#})
+
+(class_function world_editor void NextMode () {
+	(+= this.mode 1)
+	(= this.mode (% this.mode 2))
+	(log "mode: %d" this.mode)
+})
+
+(class_function world_editor void SaveScene () {
+	(avdl_node_NodeToJson this.hierarchy2 "test.json")
 })

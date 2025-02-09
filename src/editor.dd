@@ -1,5 +1,10 @@
 (include "editor.ddh")
 
+(int MODE_NONE 0)
+(int MODE_TRANSLATE_X 1)
+(int MODE_TRANSLATE_Y 2)
+(int MODE_TRANSLATE_Z 3)
+
 (class_function world_editor void create ()
 	(group
 
@@ -116,25 +121,54 @@
 #
 #	(= this.hierarchyOffsetY 0)
 
-	(= this.uiButtonsCount 3)
+	(= this.uiButtonsCount 6)
 	(this.uiButtons[0].SetAnchor 0.0 0.0)
 	(this.uiButtons[0].SetPosition 0.5 -0.5)
 	(this.uiButtons[0].SetSize 1.0 1.0)
 	(this.uiButtons[0].SetOnClick this.SelectNearestObject this)
+	(this.uiButtons[0].SetTitle "Select Nearby")
 
 	# change mode
 	(this.uiButtons[1].SetAnchor 0.0 0.0)
 	(this.uiButtons[1].SetPosition 1.5 -0.5)
 	(this.uiButtons[1].SetSize 1.0 1.0)
-	(this.uiButtons[1].SetOnClick this.NextMode this)
+	(this.uiButtons[1].SetOnClick this.DuplicateSelectedObject this)
+	(this.uiButtons[1].SetTitle "Duplicate")
 
 	# save scene
 	(this.uiButtons[2].SetAnchor 0.0 0.0)
 	(this.uiButtons[2].SetPosition 2.5 -0.5)
 	(this.uiButtons[2].SetSize 1.0 1.0)
 	(this.uiButtons[2].SetOnClick this.SaveScene this)
+	(this.uiButtons[2].SetTitle "Save")
 
-	(= this.mode 0)
+	# translaze X
+	(this.uiButtons[3].SetAnchor 0.0 1.0)
+	(this.uiButtons[3].SetPosition 0.5 1.0)
+	(this.uiButtons[3].SetSize 1.0 0.4)
+	(this.uiButtons[3].SetOnClick this.TranslateModeX this)
+	(this.uiButtons[3].SetTitle "Tr:X")
+
+	# translaze Y
+	(this.uiButtons[4].SetAnchor 0.0 1.0)
+	(this.uiButtons[4].SetPosition 0.5 0.6)
+	(this.uiButtons[4].SetSize 1.0 0.4)
+	(this.uiButtons[4].SetOnClick this.TranslateModeY this)
+	(this.uiButtons[4].SetTitle "Tr:Y")
+
+	# translaze Z
+	(this.uiButtons[5].SetAnchor 0.0 1.0)
+	(this.uiButtons[5].SetPosition 0.5 0.2)
+	(this.uiButtons[5].SetSize 1.0 0.4)
+	(this.uiButtons[5].SetOnClick this.TranslateModeZ this)
+	(this.uiButtons[5].SetTitle "Tr:Z")
+
+	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
+		(this.uiButtons[i].SetFont this.font)
+	})
+
+
+	(= this.mode MODE_NONE)
 
 	)
 )
@@ -188,6 +222,50 @@
 #	(for (int i 0) (< i 2) (+= i 1) {
 #		(this.scrollHierarchy[i].update dt)
 #	})
+
+	(if (> this.mode MODE_NONE) {
+
+		# calculate mouse distance
+		(def float diffx)
+		(= diffx (+ (- (dd_mouse_x) this.mouse_pin_x) (- (dd_mouse_y) this.mouse_pin_y)))
+
+		# translate selected node
+		(if this.selected_node {
+			(def ref avdl_transform selectedTransform)
+			(= selectedTransform (this.selected_node.GetLocalTransform))
+
+			(def ref dd_vec3 selectedPos)
+			(= selectedPos (selectedTransform.GetPosition selectedTransform))
+
+			(if (== this.mode MODE_TRANSLATE_X) {
+				(selectedTransform.SetPosition3f selectedTransform
+					(+ (dd_vec4_getX selectedPos) (* diffx 0.01))
+					(dd_vec4_getY selectedPos)
+					(dd_vec4_getZ selectedPos)
+				)
+			}
+			(== this.mode MODE_TRANSLATE_Y) {
+				(selectedTransform.SetPosition3f selectedTransform
+					(dd_vec4_getX selectedPos)
+					(+ (dd_vec4_getY selectedPos) (* diffx 0.01))
+					(dd_vec4_getZ selectedPos)
+				)
+			}
+			(== this.mode MODE_TRANSLATE_Z) {
+				(selectedTransform.SetPosition3f selectedTransform
+					(dd_vec4_getX selectedPos)
+					(dd_vec4_getY selectedPos)
+					(+ (dd_vec4_getZ selectedPos) (* diffx 0.01))
+				)
+			}
+			)
+		})
+
+		# save new mouse position
+		(= this.mouse_pin_x (dd_mouse_x))
+		(= this.mouse_pin_y (dd_mouse_y))
+
+	})
 
 	# mouse is being pressed
 	(if this.mouse_pressed
@@ -332,7 +410,7 @@
 	)
 
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
-		(this.uiButtons[i].drawDebug)
+		(this.uiButtons[i].draw)
 	})
 #	#(this.description_button.applyTransform)
 #	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
@@ -357,8 +435,18 @@
 
 (class_function world_editor void input (group int button int type) {
 
+	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN) (> this.mode MODE_NONE)) {
+		(return)
+	})
+	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_UP) (> this.mode MODE_NONE)) {
+		(= this.mode MODE_NONE)
+		(return)
+	})
+
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
-		(this.uiButtons[i].mouse_input button type)
+		(if (this.uiButtons[i].mouse_input button type) {
+			(return)
+		})
 	})
 #	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
 #		(this.hierarchyUIButton[i].mouse_input button type)
@@ -770,19 +858,19 @@
 		(+ (dd_vec4_getZ cam) (dd_vec4_getZ forward))
 	)
 
-	(if (&& this.selected_node (== this.mode 1)) {
-		(def ref avdl_transform selectedTransform)
-		(= selectedTransform (this.selected_node.GetLocalTransform))
-
-		(def ref dd_vec3 selectedPos)
-		(= selectedPos (selectedTransform.GetPosition selectedTransform))
-
-		(selectedTransform.SetPosition3f selectedTransform
-			(+ (dd_vec4_getX selectedPos) (dd_vec4_getX forward))
-			(+ (dd_vec4_getY selectedPos) (dd_vec4_getY forward))
-			(+ (dd_vec4_getZ selectedPos) (dd_vec4_getZ forward))
-		)
-	})
+#	(if (&& this.selected_node (== this.mode MODE_TRANSLATE_X)) {
+#		(def ref avdl_transform selectedTransform)
+#		(= selectedTransform (this.selected_node.GetLocalTransform))
+#
+#		(def ref dd_vec3 selectedPos)
+#		(= selectedPos (selectedTransform.GetPosition selectedTransform))
+#
+#		(selectedTransform.SetPosition3f selectedTransform
+#			(+ (dd_vec4_getX selectedPos) (dd_vec4_getX forward))
+#			(+ (dd_vec4_getY selectedPos) (dd_vec4_getY forward))
+#			(+ (dd_vec4_getZ selectedPos) (dd_vec4_getZ forward))
+#		)
+#	})
 
 	)
 )
@@ -865,11 +953,50 @@
 #})
 
 (class_function world_editor void NextMode () {
-	(+= this.mode 1)
-	(= this.mode (% this.mode 2))
-	(log "mode: %d" this.mode)
+#	(+= this.mode 1)
+#	(= this.mode (% this.mode 2))
+#	(log "mode: %d" this.mode)
 })
 
 (class_function world_editor void SaveScene () {
 	(avdl_node_NodeToJson this.hierarchy2 "test.json")
+})
+
+(class_function world_editor void TranslateModeX () {
+	(= this.mode MODE_TRANSLATE_X)
+	(= this.mouse_pin_x (dd_mouse_x))
+	(= this.mouse_pin_y (dd_mouse_y))
+})
+
+(class_function world_editor void TranslateModeY () {
+	(= this.mode MODE_TRANSLATE_Y)
+	(= this.mouse_pin_x (dd_mouse_x))
+	(= this.mouse_pin_y (dd_mouse_y))
+})
+
+(class_function world_editor void TranslateModeZ () {
+	(= this.mode MODE_TRANSLATE_Z)
+	(= this.mouse_pin_x (dd_mouse_x))
+	(= this.mouse_pin_y (dd_mouse_y))
+})
+
+(class_function world_editor void DuplicateSelectedObject () {
+
+	(if (== this.selected_node 0) {
+		(log "no selected node")
+		(return)
+	})
+
+	(def ref avdl_node parent_node)
+	(= parent_node (this.selected_node.GetParent))
+
+	(if (== parent_node 0) {
+		(log "no parent")
+		(return)
+	})
+
+	(def ref avdl_node node)
+	(= node (this.selected_node.AddChild))
+
+	(node.Copy node this.selected_node)
 })

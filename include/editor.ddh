@@ -1,4 +1,5 @@
 (include "button.ddh")
+(include "ui_button.ddh")
 
 # visual editor
 (class world_editor dd_world
@@ -53,7 +54,7 @@
 #	(def avdl_ui_element hierarchyUIButton[100])
 #	(def avdl_ui_element scrollHierarchy[2])
 	(int uiButtonsCount)
-	(def avdl_ui_element uiButtons[100])
+	(def UIButton uiButtons[100])
 
 	# mode
 	(int mode)
@@ -77,6 +78,12 @@
 
 	(function void NextMode ())
 	(function void SaveScene ())
+
+	(function void TranslateModeX ())
+	(function void TranslateModeY ())
+	(function void TranslateModeZ ())
+
+	(function void DuplicateSelectedObject ())
 
 	)
 ) # world editor

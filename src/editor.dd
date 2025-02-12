@@ -95,8 +95,7 @@
 
 	(dd_da_initStructRef this.mesh_component_array avdl_component_mesh)
 	(dd_da_initStructRef this.terrain_component_array avdl_component_terrain)
-        (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
-        (avdl_node_AddComponentsToArray this.hierarchy2 this.terrain_component_array AVDL_COMPONENT_TERRAIN_ENUM)
+	(this.RefreshHierarchyArrays)
 
 	# test select first node
 	(def ref avdl_component_mesh m)
@@ -360,13 +359,17 @@
 		(def ref avdl_node node)
 		(= node (mesh.GetNode mesh))
 
-
 		(dd_matrix_push)
 		(dd_multMatrixf (node.GetGlobalMatrix node))
-		(if (== node this.selected_node)
-			(this.selected.draw)
-		)
 		(mesh.draw mesh)
+		(dd_matrix_pop)
+	})
+
+	# draw selection
+	(if this.selected_node {
+		(dd_matrix_push)
+		(dd_multMatrixf (this.selected_node.GetGlobalMatrix))
+		(this.selected.draw)
 		(dd_matrix_pop)
 	})
 
@@ -987,16 +990,46 @@
 		(return)
 	})
 
-	(def ref avdl_node parent_node)
-	(= parent_node (this.selected_node.GetParent))
+	(def ref avdl_node newNode)
+	(= newNode (this.selected_node.Duplicate 0))
+	(if newNode {
+		(log "duplicate created")
+		(= this.selected_node newNode)
 
-	(if (== parent_node 0) {
-		(log "no parent")
-		(return)
+		(def ref avdl_transform t)
+		(= t (this.selected_node.GetLocalTransform))
+
+		(def ref dd_vec3 pos)
+		(= pos (t.GetPosition t))
+		(t.SetPosition3f t
+			(+ (dd_vec3_getX pos) 1)
+			(dd_vec3_getY pos)
+			(dd_vec3_getZ pos)
+		)
+
+		(this.RefreshHierarchyArrays)
+	}
+	{
+		(log "failed to create duplicate")
 	})
 
-	(def ref avdl_node node)
-	(= node (this.selected_node.AddChild))
+#	(def ref avdl_node parent_node)
+#	(= parent_node (this.selected_node.GetParent))
+#
+#	(if (== parent_node 0) {
+#		(log "no parent")
+#		(return)
+#	})
+#
+#	(def ref avdl_node node)
+#	(= node (this.selected_node.AddChild))
+#
+#	(node.Copy node this.selected_node)
+})
 
-	(node.Copy node this.selected_node)
+(class_function world_editor void RefreshHierarchyArrays () {
+	(dd_da_empty this.mesh_component_array)
+	(dd_da_empty this.terrain_component_array)
+        (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
+        (avdl_node_AddComponentsToArray this.hierarchy2 this.terrain_component_array AVDL_COMPONENT_TERRAIN_ENUM)
 })

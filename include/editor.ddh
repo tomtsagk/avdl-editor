@@ -85,5 +85,7 @@
 
 	(function void DuplicateSelectedObject ())
 
+	(function void RefreshHierarchyArrays ())
+
 	)
 ) # world editor

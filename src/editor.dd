@@ -129,7 +129,7 @@
 #
 #	(= this.hierarchyOffsetY 0)
 
-	(= this.uiButtonsCount 13)
+	(= this.uiButtonsCount 14)
 	(this.uiButtons[0].SetAnchor 0.0 0.0)
 	(this.uiButtons[0].SetPosition 0.5 -0.5)
 	(this.uiButtons[0].SetSize 1.0 1.0)
@@ -219,6 +219,13 @@
 	(this.uiButtons[12].SetSize 1.0 1.2)
 	(this.uiButtons[12].SetOnClick this.ScaleModeUniform this)
 	(this.uiButtons[12].SetTitle "S:U")
+
+	# delete object
+	(this.uiButtons[13].SetAnchor 0.0 0.0)
+	(this.uiButtons[13].SetPosition 3.5 -0.5)
+	(this.uiButtons[13].SetSize 1.0 1.0)
+	(this.uiButtons[13].SetOnClick this.DeleteSelectedObject this)
+	(this.uiButtons[13].SetTitle "Del")
 
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
 		(this.uiButtons[i].SetFont this.font)
@@ -561,8 +568,10 @@
 	})
 
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
-		(if (this.uiButtons[i].mouse_input button type) {
-			(return)
+		(if (== button AVDL_INPUT_MOUSE_LEFT) {
+			(if (this.uiButtons[i].mouse_input button type) {
+				(return)
+			})
 		})
 	})
 #	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
@@ -1149,7 +1158,6 @@
 	(def ref avdl_node newNode)
 	(= newNode (this.selected_node.Duplicate 0))
 	(if newNode {
-		(log "duplicate created")
 		(= this.selected_node newNode)
 
 		(def ref avdl_transform t)
@@ -1181,6 +1189,22 @@
 #	(= node (this.selected_node.AddChild))
 #
 #	(node.Copy node this.selected_node)
+})
+
+(class_function world_editor void DeleteSelectedObject () {
+
+	(if (== this.selected_node 0) {
+		(log "no selected node")
+		(return)
+	})
+
+	(def ref avdl_node parentNode)
+	(= parentNode (this.selected_node.GetParent))
+
+	(parentNode.RemoveChild parentNode this.selected_node)
+	(= this.selected_node 0)
+	(this.RefreshHierarchyArrays)
+
 })
 
 (class_function world_editor void RefreshHierarchyArrays () {

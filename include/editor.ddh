@@ -91,6 +91,7 @@
 	(function void ScaleModeUniform ())
 
 	(function void DuplicateSelectedObject ())
+	(function void DeleteSelectedObject ())
 
 	(function void RefreshHierarchyArrays ())
 

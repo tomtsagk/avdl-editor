@@ -82,6 +82,13 @@
 	(function void TranslateModeX ())
 	(function void TranslateModeY ())
 	(function void TranslateModeZ ())
+	(function void RotateModeX ())
+	(function void RotateModeY ())
+	(function void RotateModeZ ())
+	(function void ScaleModeX ())
+	(function void ScaleModeY ())
+	(function void ScaleModeZ ())
+	(function void ScaleModeUniform ())
 
 	(function void DuplicateSelectedObject ())
 

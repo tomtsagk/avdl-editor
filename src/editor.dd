@@ -1,9 +1,18 @@
 (include "editor.ddh")
 
-(int MODE_NONE 0)
-(int MODE_TRANSLATE_X 1)
-(int MODE_TRANSLATE_Y 2)
-(int MODE_TRANSLATE_Z 3)
+(enum MODE
+	MODE_NONE
+	MODE_TRANSLATE_X
+	MODE_TRANSLATE_Y
+	MODE_TRANSLATE_Z
+	MODE_ROTATE_X
+	MODE_ROTATE_Y
+	MODE_ROTATE_Z
+	MODE_SCALE_X
+	MODE_SCALE_Y
+	MODE_SCALE_Z
+	MODE_SCALE_UNIFORM
+)
 
 (class_function world_editor void create ()
 	(group
@@ -120,7 +129,7 @@
 #
 #	(= this.hierarchyOffsetY 0)
 
-	(= this.uiButtonsCount 6)
+	(= this.uiButtonsCount 13)
 	(this.uiButtons[0].SetAnchor 0.0 0.0)
 	(this.uiButtons[0].SetPosition 0.5 -0.5)
 	(this.uiButtons[0].SetSize 1.0 1.0)
@@ -141,26 +150,75 @@
 	(this.uiButtons[2].SetOnClick this.SaveScene this)
 	(this.uiButtons[2].SetTitle "Save")
 
-	# translaze X
+	# translate X
 	(this.uiButtons[3].SetAnchor 0.0 1.0)
 	(this.uiButtons[3].SetPosition 0.5 1.0)
 	(this.uiButtons[3].SetSize 1.0 0.4)
 	(this.uiButtons[3].SetOnClick this.TranslateModeX this)
-	(this.uiButtons[3].SetTitle "Tr:X")
+	(this.uiButtons[3].SetTitle "T:X")
 
-	# translaze Y
+	# translate Y
 	(this.uiButtons[4].SetAnchor 0.0 1.0)
 	(this.uiButtons[4].SetPosition 0.5 0.6)
 	(this.uiButtons[4].SetSize 1.0 0.4)
 	(this.uiButtons[4].SetOnClick this.TranslateModeY this)
-	(this.uiButtons[4].SetTitle "Tr:Y")
+	(this.uiButtons[4].SetTitle "T:Y")
 
-	# translaze Z
+	# translate Z
 	(this.uiButtons[5].SetAnchor 0.0 1.0)
 	(this.uiButtons[5].SetPosition 0.5 0.2)
 	(this.uiButtons[5].SetSize 1.0 0.4)
 	(this.uiButtons[5].SetOnClick this.TranslateModeZ this)
-	(this.uiButtons[5].SetTitle "Tr:Z")
+	(this.uiButtons[5].SetTitle "T:Z")
+
+	# rotate X
+	(this.uiButtons[6].SetAnchor 0.0 1.0)
+	(this.uiButtons[6].SetPosition 1.5 1.0)
+	(this.uiButtons[6].SetSize 1.0 0.4)
+	(this.uiButtons[6].SetOnClick this.RotateModeX this)
+	(this.uiButtons[6].SetTitle "R:X")
+
+	# rotate Y
+	(this.uiButtons[7].SetAnchor 0.0 1.0)
+	(this.uiButtons[7].SetPosition 1.5 0.6)
+	(this.uiButtons[7].SetSize 1.0 0.4)
+	(this.uiButtons[7].SetOnClick this.RotateModeY this)
+	(this.uiButtons[7].SetTitle "R:Y")
+
+	# rotate Z
+	(this.uiButtons[8].SetAnchor 0.0 1.0)
+	(this.uiButtons[8].SetPosition 1.5 0.2)
+	(this.uiButtons[8].SetSize 1.0 0.4)
+	(this.uiButtons[8].SetOnClick this.RotateModeZ this)
+	(this.uiButtons[8].SetTitle "R:Z")
+
+	# scale X
+	(this.uiButtons[9].SetAnchor 0.0 1.0)
+	(this.uiButtons[9].SetPosition 2.5 1.0)
+	(this.uiButtons[9].SetSize 1.0 0.4)
+	(this.uiButtons[9].SetOnClick this.ScaleModeX this)
+	(this.uiButtons[9].SetTitle "S:X")
+
+	# scale Y
+	(this.uiButtons[10].SetAnchor 0.0 1.0)
+	(this.uiButtons[10].SetPosition 2.5 0.6)
+	(this.uiButtons[10].SetSize 1.0 0.4)
+	(this.uiButtons[10].SetOnClick this.ScaleModeY this)
+	(this.uiButtons[10].SetTitle "S:Y")
+
+	# scale Z
+	(this.uiButtons[11].SetAnchor 0.0 1.0)
+	(this.uiButtons[11].SetPosition 2.5 0.2)
+	(this.uiButtons[11].SetSize 1.0 0.4)
+	(this.uiButtons[11].SetOnClick this.ScaleModeZ this)
+	(this.uiButtons[11].SetTitle "S:Z")
+
+	# scale uniform
+	(this.uiButtons[12].SetAnchor 0.0 1.0)
+	(this.uiButtons[12].SetPosition 3.5 0.6)
+	(this.uiButtons[12].SetSize 1.0 1.2)
+	(this.uiButtons[12].SetOnClick this.ScaleModeUniform this)
+	(this.uiButtons[12].SetTitle "S:U")
 
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
 		(this.uiButtons[i].SetFont this.font)
@@ -235,7 +293,12 @@
 
 			(def ref dd_vec3 selectedPos)
 			(= selectedPos (selectedTransform.GetPosition selectedTransform))
+			(def ref dd_vec3 selectedRot)
+			(= selectedRot (selectedTransform.GetRotation selectedTransform))
+			(def ref dd_vec3 selectedScale)
+			(= selectedScale (selectedTransform.GetScale selectedTransform))
 
+			# translate
 			(if (== this.mode MODE_TRANSLATE_X) {
 				(selectedTransform.SetPosition3f selectedTransform
 					(+ (dd_vec4_getX selectedPos) (* diffx 0.01))
@@ -255,6 +318,57 @@
 					(dd_vec4_getX selectedPos)
 					(dd_vec4_getY selectedPos)
 					(+ (dd_vec4_getZ selectedPos) (* diffx 0.01))
+				)
+			}
+			# rotate
+			(== this.mode MODE_ROTATE_X) {
+				(selectedTransform.SetRotation3f selectedTransform
+					(+ (dd_vec4_getX selectedRot) (* diffx 0.1))
+					(dd_vec4_getY selectedRot)
+					(dd_vec4_getZ selectedRot)
+				)
+			}
+			(== this.mode MODE_ROTATE_Y) {
+				(selectedTransform.SetRotation3f selectedTransform
+					(dd_vec4_getX selectedRot)
+					(+ (dd_vec4_getY selectedRot) (* diffx 0.1))
+					(dd_vec4_getZ selectedRot)
+				)
+			}
+			(== this.mode MODE_ROTATE_Z) {
+				(selectedTransform.SetRotation3f selectedTransform
+					(dd_vec4_getX selectedRot)
+					(dd_vec4_getY selectedRot)
+					(+ (dd_vec4_getZ selectedRot) (* diffx 0.1))
+				)
+			}
+			# scale
+			(== this.mode MODE_SCALE_X) {
+				(selectedTransform.SetScale3f selectedTransform
+					(+ (dd_vec4_getX selectedScale) (* diffx 0.01))
+					(dd_vec4_getY selectedScale)
+					(dd_vec4_getZ selectedScale)
+				)
+			}
+			(== this.mode MODE_SCALE_Y) {
+				(selectedTransform.SetScale3f selectedTransform
+					(dd_vec4_getX selectedScale)
+					(+ (dd_vec4_getY selectedScale) (* diffx 0.01))
+					(dd_vec4_getZ selectedScale)
+				)
+			}
+			(== this.mode MODE_SCALE_Z) {
+				(selectedTransform.SetScale3f selectedTransform
+					(dd_vec4_getX selectedScale)
+					(dd_vec4_getY selectedScale)
+					(+ (dd_vec4_getZ selectedScale) (* diffx 0.01))
+				)
+			}
+			(== this.mode MODE_SCALE_UNIFORM) {
+				(selectedTransform.SetScale3f selectedTransform
+					(+ (dd_vec4_getX selectedScale) (* diffx 0.01))
+					(+ (dd_vec4_getY selectedScale) (* diffx 0.01))
+					(+ (dd_vec4_getZ selectedScale) (* diffx 0.01))
 				)
 			}
 			)
@@ -979,6 +1093,48 @@
 
 (class_function world_editor void TranslateModeZ () {
 	(= this.mode MODE_TRANSLATE_Z)
+	(= this.mouse_pin_x (dd_mouse_x))
+	(= this.mouse_pin_y (dd_mouse_y))
+})
+
+(class_function world_editor void RotateModeX () {
+	(= this.mode MODE_ROTATE_X)
+	(= this.mouse_pin_x (dd_mouse_x))
+	(= this.mouse_pin_y (dd_mouse_y))
+})
+
+(class_function world_editor void RotateModeY () {
+	(= this.mode MODE_ROTATE_Y)
+	(= this.mouse_pin_x (dd_mouse_x))
+	(= this.mouse_pin_y (dd_mouse_y))
+})
+
+(class_function world_editor void RotateModeZ () {
+	(= this.mode MODE_ROTATE_Z)
+	(= this.mouse_pin_x (dd_mouse_x))
+	(= this.mouse_pin_y (dd_mouse_y))
+})
+
+(class_function world_editor void ScaleModeX () {
+	(= this.mode MODE_SCALE_X)
+	(= this.mouse_pin_x (dd_mouse_x))
+	(= this.mouse_pin_y (dd_mouse_y))
+})
+
+(class_function world_editor void ScaleModeY () {
+	(= this.mode MODE_SCALE_Y)
+	(= this.mouse_pin_x (dd_mouse_x))
+	(= this.mouse_pin_y (dd_mouse_y))
+})
+
+(class_function world_editor void ScaleModeZ () {
+	(= this.mode MODE_SCALE_Z)
+	(= this.mouse_pin_x (dd_mouse_x))
+	(= this.mouse_pin_y (dd_mouse_y))
+})
+
+(class_function world_editor void ScaleModeUniform () {
+	(= this.mode MODE_SCALE_UNIFORM)
 	(= this.mouse_pin_x (dd_mouse_x))
 	(= this.mouse_pin_y (dd_mouse_y))
 })

@@ -68,7 +68,7 @@
 	(this.grid.set_colour 0.1 0.5 0.1)
 
 	# selection
-	(= this.selected_node 0)
+	(this.SetSelection 0)
 	(this.selected.load (asset "assets/selected.ply" DD_PLY))
 
 	# button
@@ -106,12 +106,6 @@
 	(dd_da_initStructRef this.terrain_component_array avdl_component_terrain)
 	(this.RefreshHierarchyArrays)
 
-	# test select first node
-	(def ref avdl_component_mesh m)
-	(= m (dd_da_getDeref this.mesh_component_array 0))
-	(def ref avdl_node node)
-	(= this.selected_node (m.GetNode m))
-
 #	(= this.hierarchyUIButtonCount 5)
 #	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
 #		(this.hierarchyUIButton[i].SetAnchor 0.0 0.0)
@@ -129,7 +123,7 @@
 #
 #	(= this.hierarchyOffsetY 0)
 
-	(= this.uiButtonsCount 14)
+	(= this.uiButtonsCount 15)
 	(this.uiButtons[0].SetAnchor 0.0 0.0)
 	(this.uiButtons[0].SetPosition 0.5 -0.5)
 	(this.uiButtons[0].SetSize 1.0 1.0)
@@ -226,6 +220,11 @@
 	(this.uiButtons[13].SetSize 1.0 1.0)
 	(this.uiButtons[13].SetOnClick this.DeleteSelectedObject this)
 	(this.uiButtons[13].SetTitle "Del")
+
+	# selected object
+	(this.uiButtons[14].SetAnchor 0.5 0.0)
+	(this.uiButtons[14].SetPosition 0.0 -0.25)
+	(this.uiButtons[14].SetSize 1.0 0.5)
 
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
 		(this.uiButtons[i].SetFont this.font)
@@ -1078,7 +1077,7 @@
 
 	(float min)
 	(= min 100)
-	(= this.selected_node 0)
+	(this.SetSelection 0)
 
 	(for (def int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
 		(def ref avdl_component_mesh mesh)
@@ -1097,7 +1096,7 @@
 
 		(if (< (dd_vec4_magnitude distance) min) {
 			(= min (dd_vec4_magnitude distance))
-			(= this.selected_node node)
+			(this.SetSelection node)
 		})
 
 		(log "node: %f %f %f"
@@ -1201,7 +1200,7 @@
 	(def ref avdl_node newNode)
 	(= newNode (this.selected_node.Duplicate 0))
 	(if newNode {
-		(= this.selected_node newNode)
+		(this.SetSelection newNode)
 
 		(def ref avdl_transform t)
 		(= t (this.selected_node.GetLocalTransform))
@@ -1245,7 +1244,7 @@
 	(= parentNode (this.selected_node.GetParent))
 
 	(parentNode.RemoveChild parentNode this.selected_node)
-	(= this.selected_node 0)
+	(this.SetSelection 0)
 	(this.RefreshHierarchyArrays)
 
 })
@@ -1255,4 +1254,12 @@
 	(dd_da_empty this.terrain_component_array)
         (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
         (avdl_node_AddComponentsToArray this.hierarchy2 this.terrain_component_array AVDL_COMPONENT_TERRAIN_ENUM)
+})
+
+(class_function world_editor void SetSelection {avdl_node newSelection} {
+	(= this.selected_node newSelection)
+	(if newSelection
+		(this.uiButtons[14].SetTitle (this.selected_node.GetName))
+		(this.uiButtons[14].SetTitle "N/A")
+	)
 })

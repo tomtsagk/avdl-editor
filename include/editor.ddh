@@ -98,5 +98,7 @@
 
 	(function void RefreshHierarchyArrays ())
 
+	(function void SetSelection {avdl_node newSelection})
+
 	)
 ) # world editor

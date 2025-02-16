@@ -43,6 +43,9 @@
 	(def dd_dynamic_array mesh_component_array)
 	(def dd_dynamic_array terrain_component_array)
 
+	# terrain shader
+	(def avdl_program terrain_shader)
+
 	# selected
 	(def ref avdl_node selected_node)
 	(def avdl_mesh selected)

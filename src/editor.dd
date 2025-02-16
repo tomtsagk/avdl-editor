@@ -234,6 +234,47 @@
 
 	(= this.mode MODE_NONE)
 
+	# terrain shader
+	(this.terrain_shader.setVertexShader
+		(multistring
+		"AVDL_IN vec3 colour;\n"
+		"AVDL_IN vec2 texCoord;\n"
+
+		"AVDL_OUT vec2 outTexCoord;\n"
+		"AVDL_OUT vec4 outColour;\n"
+
+		"void main() {\n"
+		"       gl_Position = final_position();\n"
+		"       outColour = vec4(0.0, 0.0, 0.0, 0);\n"
+		"       outTexCoord  = texCoord;\n"
+		"}\n"
+		)
+	)
+
+	(this.terrain_shader.setFragmentShader
+		(multistring
+		"AVDL_IN vec4 outColour;\n"
+		"AVDL_IN vec2 outTexCoord;\n"
+
+		"uniform sampler2D image;\n"
+		"uniform sampler2D image_extra_0;\n"
+		"uniform sampler2D image_extra_1;\n"
+		"uniform sampler2D image_extra_2;\n"
+		"uniform sampler2D image_extra_3;\n"
+
+		"void main() {\n"
+		"       vec4 alpha = avdl_texture(image, outTexCoord);\n"
+		"       vec4 finalCol = avdl_texture(image_extra_0, outTexCoord*10.0)"
+		"               *(1 -alpha.r -alpha.g -alpha.b)"
+		"               +(avdl_texture(image_extra_1, outTexCoord*10.0) *alpha.r)"
+		"               +(avdl_texture(image_extra_2, outTexCoord*10.0) *alpha.g)"
+		"               +(avdl_texture(image_extra_3, outTexCoord*10.0) *alpha.b)"
+		"               ;\n"
+		"       avdl_frag_color = finalCol;\n"
+		"}\n"
+		)
+	)
+
 	)
 )
 
@@ -510,7 +551,9 @@
 		(if (== node this.selected_node)
 			(this.selected.draw)
 		)
+		(this.terrain_shader.useProgram)
 		(terrain.draw terrain)
+		(avdl_useProgram 0)
 		(dd_matrix_pop)
 	})
 

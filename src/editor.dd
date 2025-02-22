@@ -23,6 +23,15 @@
 	# default font
 	(this.font.set (asset "assets/nishiki_teki.ttf" DD_PLY) 4)
 
+	# fps counter
+	(= this.fps 0)
+	(= this.fps_dt 0)
+	(= this.frames_count 0)
+	(this.fps_label.setFont this.font)
+	(this.fps_label.setText "FPS:")
+	(this.fps_label_int.setFont this.font)
+	(this.fps_label_int.setTextInt)
+
 	#(for (def int i 0) (< i 6) (= i (+ i 1))
 	#	(= this.skybox_texture[i] "assets/icon_64x64.png")
 	#)
@@ -317,6 +326,17 @@
 (class_function world_editor void update (group float dt)
 	(group
 
+	# fps calculations
+	(= this.fps_dt (+ this.fps_dt dt))
+	(= this.frames_count (+ this.frames_count 1))
+	(if (>= this.fps_dt 1.0)
+		(group
+		(= this.fps this.frames_count)
+		(= this.frames_count 0)
+		(= this.fps_dt (- this.fps_dt 1.0))
+		)
+	)
+
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
 		(this.uiButtons[i].update dt)
 	})
@@ -468,6 +488,21 @@
 (class_function world_editor void draw ()
 	(group
 
+	# fps counter
+	(dd_matrix_push)
+	(dd_translatef
+		(* (dd_screen_width_get 5) -0.5 0.8)
+		(* (dd_screen_height_get 5) 0.5 0.8)
+		-5
+	)
+	(dd_scalef 0.2 0.2 0.2)
+	(dd_translatef 0 -2 0)
+	(this.fps_label.draw)
+	(dd_translatef 3 0 0)
+	(this.fps_label_int.drawInt this.fps)
+	(dd_matrix_pop)
+
+
 #	# skybox
 #	(dd_matrix_push)
 #	(dd_rotatef (dd_vec3_getX this.camera_rotation) -1 0 0)
@@ -588,8 +623,6 @@
 #		(this.scrollHierarchy[i].drawDebug)
 #	})
 #	#(dd_matrix_pop)
-
-	# scene ?
 
 	)
 )

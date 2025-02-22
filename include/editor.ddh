@@ -11,6 +11,13 @@
 	(def string skybox_texture[6])
 	(def avdl_skybox skybox)
 
+	# debug fps counter
+	(def dd_string3d fps_label)
+	(def dd_string3d fps_label_int)
+	(def int fps)
+	(def int frames_count)
+	(def float fps_dt)
+
 	# view camera
 	(def dd_vec3 camera_position)
 	(def dd_vec3 camera_rotation)

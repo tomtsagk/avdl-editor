@@ -1,0 +1,15 @@
+(class UIButton avdl_ui_element {
+
+	(string title)
+	(def dd_string3d label)
+
+	(function void create ())
+	(function void clean ())
+
+	(function void SetTitle {string text})
+
+	(function void draw ())
+
+	(function void SetFont {avdl_font font})
+
+})

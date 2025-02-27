@@ -38,11 +38,6 @@
 	# default grid
 	(def avdl_mesh grid)
 
-	# test button
-	(def int selection)
-	(def int buttonTotal)
-	(def Button button[5])
-
 	# test hierarchy
 	(def avdl_node hierarchy)
 	(def ref avdl_node hierarchy2)

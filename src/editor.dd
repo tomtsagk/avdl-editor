@@ -80,26 +80,6 @@
 	(this.SetSelection 0)
 	(this.selected.load (asset "assets/selected.ply" DD_PLY))
 
-	# button
-	(= this.buttonTotal 3)
-	#(this.button.mesh.load (asset "assets/button.ply" DD_PLY))
-	(this.button[0].mesh.set_primitive AVDL_PRIMITIVE_RECTANGLE)
-	(this.button[0].mesh.set_colour 1.0 1.0 1.0)
-	(this.button[0].label.setFont this.font)
-	(this.button[0].label.setText "^")
-
-	(this.button[1].mesh.set_primitive AVDL_PRIMITIVE_RECTANGLE)
-	(this.button[1].mesh.set_colour 1.0 1.0 1.0)
-	(this.button[1].label.setFont this.font)
-	(this.button[1].label.setText "v")
-
-	(this.button[2].mesh.set_primitive AVDL_PRIMITIVE_RECTANGLE)
-	(this.button[2].mesh.set_colour 1.0 1.0 1.0)
-	(this.button[2].label.setFont this.font)
-	(this.button[2].label.setText "Add Box")
-
-	(= this.selection -1)
-
 	(= this.walksForward 0)
 	(= this.walksRight 0)
 	(= this.walksBack 0)
@@ -326,24 +306,6 @@
 
 (class_function world_editor void resize ()
 	(group
-	(this.button[0].setSize 1 1)
-	(this.button[0].setProportionalPosition 0.85 0.15)
-	(this.button[0].setProportionalWidth 0.2)
-	(this.button[0].setProportionalSize 0.8)
-	(this.button[0].resize)
-
-	(this.button[1].setSize 1 1)
-	(this.button[1].setProportionalPosition 0.15 0.15)
-	(this.button[1].setProportionalWidth 0.2)
-	(this.button[1].setProportionalSize 0.8)
-	(this.button[1].resize)
-
-	(this.button[2].setSize 1 1)
-	(this.button[2].setProportionalPosition 0.85 0.85)
-	(this.button[2].setProportionalWidth 0.2)
-	(this.button[2].setProportionalSize 0.8)
-	(this.button[2].resize)
-
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
 		(this.uiButtons[i].resize)
 	})
@@ -500,12 +462,6 @@
 		)
 	)
 
-	(if (== this.selection 0)
-		(this.ViewTranslate 0 0 -0.1)
-	(== this.selection 1)
-		(this.ViewTranslate 0 0 0.1)
-	)
-
 	(float move_x 0)
 	(float move_z 0)
 	(if this.walksLeft (+= move_x 0.1))
@@ -644,20 +600,6 @@
 	(dd_matrix_pop)
 
 	(avdl_graphics_ClearDepth)
-
-	# draw button
-	(for (def int i 0) (< i this.buttonTotal) (= i (+ i 1))
-		(group
-		(dd_matrix_push)
-		(this.button[i].applyTransform)
-		(this.button[i].applyMatrixTransform)
-		(this.button[i].drawRaw)
-		(dd_translatef 0 0 0.1)
-		(dd_scalef 0.3 0.3 0.3)
-		(this.button[i].drawText)
-		(dd_matrix_pop)
-		)
-	)
 
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
 		(this.uiButtons[i].draw)
@@ -951,82 +893,15 @@
 	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN))
 		(group
 
-		# button pressed
-		(for (def int i 0) (< i this.buttonTotal) (= i (+ i 1))
-			(if (this.button[i].hasMouseCollided)
-				(= this.selection i)
-			)
-		)
-
 		# nothing pressed
-		(if (== this.selection -1)
-			(group
-			(= this.mouse_pressed 1)
-			(= this.mouse_pin_x (dd_mouse_x))
-			(= this.mouse_pin_y (dd_mouse_y))
-			)
-		)
+		(= this.mouse_pressed 1)
+		(= this.mouse_pin_x (dd_mouse_x))
+		(= this.mouse_pin_y (dd_mouse_y))
 
 		)
 	(&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_UP))
 		(group
-
-		# just clicked cube
-		(if (== this.selection 2)
-			(group
-			(def ref avdl_node child)
-			(= child (this.hierarchy2.AddChild))
-
-			(def int childIndex)
-			(= childIndex (this.hierarchy2.GetChildrenCount))
-
-			(def ref avdl_transform t)
-			(= t (child.GetLocalTransform child))
-			(t.SetPosition3f t (* childIndex 1.2) 0 0)
-
-			(def ref avdl_component_mesh com_mesh)
-			(= com_mesh (avdl_node_AddComponent child avdl_component_mesh))
-			(com_mesh.after_create com_mesh)
-
-			(dd_da_empty this.mesh_component_array)
-		        (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array AVDL_COMPONENT_MESH_ENUM)
-
-#			(def int components)
-#			(= components (dd_da_count this.mesh_component_array))
-#			(log "found %d components" components)
-#
-#			(avdl_node_print this.hierarchy2)
-#			(for (def int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
-#				(log "mesh %d %x %x" i (dd_da_get this.mesh_component_array i) (dd_da_getDeref this.mesh_component_array i))
-#
-#				(def ref avdl_component_mesh mesh)
-#				(= mesh (dd_da_getDeref this.mesh_component_array i))
-#
-##				(log "got mesh: %x" (dd_da_getDeref this.mesh_component_array i))
-#
-##				(def ref avdl_node node)
-##				(= node (mesh.GetNode mesh)) # PROBLEM IS HERE
-##
-##				#(dd_matrix_push)
-##				(dd_multMatrixf (node.GetGlobalMatrix node))
-##				(mesh.draw mesh)
-##				#(dd_matrix_pop)
-#			})
-
-#			(def ref dd_matrix m)
-#			(dd_da_pushEmpty this.hierarchy)
-#			(= m (dd_da_get this.hierarchy (- (dd_da_count this.hierarchy) 1)))
-#			(dd_matrix_identity m)
-#			(dd_matrix_translate m (* 1 (dd_da_count this.hierarchy)) 0 0)
-			(echo "added cube")
-			)
-		(== this.selection 0) {
-			(log "forward")
-			#(avdl_node_NodeToJson 
-		})
-
 		# reset input
-		(= this.selection -1)
 		(= this.mouse_pressed 0)
 		(= this.mouse_pin_x -1)
 		(= this.mouse_pin_y -1)

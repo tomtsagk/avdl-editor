@@ -1,0 +1,27 @@
+(include "ui_button.ddh")
+
+# create tile facing front
+(class_function UIButton void create () {
+	(this.label.setAlign DD_STRING3D_ALIGN_CENTER)
+})
+
+(class_function UIButton void clean () {
+})
+
+(class_function UIButton void SetTitle {string text} {
+	(= this.title text)
+	(this.label.setText text)
+})
+
+(class_function UIButton void draw () {
+	(this.drawDebug)
+	(dd_matrix_push)
+	(this.applyTransform)
+	(dd_scalef 0.2 0.2 0.2)
+	(this.label.draw)
+	(dd_matrix_pop)
+})
+
+(class_function UIButton void SetFont {avdl_font font} {
+	(this.label.setFont font)
+})

@@ -56,6 +56,7 @@
 	# selected
 	(def ref avdl_node selected_node)
 	(def avdl_mesh selected)
+	(def avdl_program selected_program)
 
 	# hierarchy UI
 #	(float hierarchyOffsetY)

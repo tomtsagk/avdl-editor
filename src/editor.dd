@@ -108,7 +108,7 @@
 	(= this.hierarchy2 (this.hierarchy.AddChild))
 	(avdl_node_JsonToNode "test.json" this.hierarchy2)
 
-	(avdl_node_print this.hierarchy2)
+	#(avdl_node_print this.hierarchy2)
 	(this.AddCameraToStage)
 
 	(dd_da_initStructRef this.mesh_component_array avdl_component_mesh)
@@ -288,6 +288,29 @@
 		"       vec4 finalCol = mix(avdl_texture(image_extra, vec3(outTexCoord*30.0, ind1)),"
 		"               avdl_texture(image_extra, vec3(outTexCoord*30.0, ind2)), 1.0 -textureFactor"
 		"               );\n"
+		"       avdl_frag_color = finalCol;\n"
+		"}\n"
+		)
+	)
+
+	(this.selected_program.setVertexShader
+		(multistring
+		"AVDL_IN vec3 colour;\n"
+		"AVDL_OUT vec4 outColour;\n"
+
+		"void main() {\n"
+		"       gl_Position = final_position();\n"
+		"       outColour = vec4(colour, 1.0);\n"
+		"}\n"
+		)
+	)
+
+	(this.selected_program.setFragmentShader
+		(multistring
+		"AVDL_IN vec4 outColour;\n"
+
+		"void main() {\n"
+		"       vec4 finalCol = outColour;\n"
 		"       avdl_frag_color = finalCol;\n"
 		"}\n"
 		)
@@ -567,6 +590,11 @@
 
 		(dd_matrix_push)
 		(dd_multMatrixf (node.GetGlobalMatrix node))
+		#(if (== node this.selected_node)
+			#(this.selected_program.useProgram)
+			#(this.selected.draw)
+			#(avdl_useProgram 0)
+		#)
 		(mesh.draw mesh)
 		(dd_matrix_pop)
 	})
@@ -574,8 +602,19 @@
 	# draw selection
 	(if this.selected_node {
 		(dd_matrix_push)
+		#(log "selected draw")
+#		(def dd_vec4 pos)
+#		(dd_vec4_set pos 0 0 0 1)
+#		(dd_vec4_multiply pos (this.selected_node.GetGlobalMatrix))
+#		(dd_translatef
+#			(dd_vec4_getX pos)
+#			(dd_vec4_getY pos)
+#			(dd_vec4_getZ pos)
+#		)
 		(dd_multMatrixf (this.selected_node.GetGlobalMatrix))
+		(this.selected_program.useProgram)
 		(this.selected.draw)
+		(avdl_useProgram 0)
 		(dd_matrix_pop)
 	})
 
@@ -1108,15 +1147,15 @@
 })
 
 (class_function world_editor void SelectNearestObject () {
-	(log "select nearest object")
+	#(log "select nearest object")
 	(def dd_vec4 cam)
 	(dd_vec4_set cam 0 0 0 1)
 	(dd_vec4_multiply cam (this.camera_node.GetGlobalMatrix))
-	(log "cam: %f %f %f"
-		(dd_vec4_getX cam)
-		(dd_vec4_getY cam)
-		(dd_vec4_getZ cam)
-	)
+#	(log "cam: %f %f %f"
+#		(dd_vec4_getX cam)
+#		(dd_vec4_getY cam)
+#		(dd_vec4_getZ cam)
+#	)
 
 	(float min)
 	(= min 100)
@@ -1142,11 +1181,11 @@
 			(this.SetSelection node)
 		})
 
-		(log "node: %f %f %f"
-			(dd_vec4_getX n)
-			(dd_vec4_getY n)
-			(dd_vec4_getZ n)
-		)
+#		(log "node: %f %f %f"
+#			(dd_vec4_getX n)
+#			(dd_vec4_getY n)
+#			(dd_vec4_getZ n)
+#		)
 	})
 })
 #(class_function world_editor void HierarchyScrollUp () {

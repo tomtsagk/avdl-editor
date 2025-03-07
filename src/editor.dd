@@ -1034,7 +1034,7 @@
 
 	(float min)
 	(= min 100)
-	(this.SetSelection 0)
+	#(this.SetSelection 0)
 
 	(for (def int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
 		(def ref avdl_component_mesh mesh)
@@ -1042,6 +1042,8 @@
 
 		(def ref avdl_node node)
 		(= node (mesh.GetNode mesh))
+
+		(if (== node this.selected_node) (continue))
 
 		(def dd_vec4 n)
 		(dd_vec4_set n 0 0 0 1)

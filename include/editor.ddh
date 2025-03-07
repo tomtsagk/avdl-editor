@@ -1,4 +1,3 @@
-(include "button.ddh")
 (include "ui_button.ddh")
 
 # visual editor

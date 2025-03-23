@@ -18,8 +18,8 @@
 	(def float fps_dt)
 
 	# view camera
-	(def dd_vec3 camera_position)
-	(def dd_vec3 camera_rotation)
+	(def avdl_vec3 camera_position)
+	(def avdl_vec3 camera_rotation)
 	(def dd_matrix camera_transform)
 	(def dd_matrix camera_transform_rot)
 	(def int mouse_pressed)
@@ -42,6 +42,7 @@
 	(def ref avdl_node hierarchy2)
 
 	(def dd_dynamic_array mesh_component_array)
+	(def dd_dynamic_array skinned_mesh_component_array)
 	(def dd_dynamic_array terrain_component_array)
 
 	# terrain shader
@@ -64,13 +65,13 @@
 	# mode
 	(int mode)
 
-	(function void create ())
-	(function void onload ())
-	(function void resize ())
-	(function void update (group float dt))
-	(function void draw ())
-	(function void input (group int button int type))
-	(function void clean ())
+	(function override void create ())
+	(function override void onload ())
+	(function override void resize ())
+	(function override void update (group float dt))
+	(function override void draw ())
+	(function override void input (group int button int type))
+	(function override void clean ())
 
 	(function void ViewRotate (group float x float y))
 	(function void ViewTranslate (group float x float y float z))

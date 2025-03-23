@@ -3,8 +3,8 @@
 	(string title)
 	(def dd_string3d label)
 
-	(function void create ())
-	(function void clean ())
+	(function override void create ())
+	(function override void clean ())
 
 	(function void SetTitle {string text})
 

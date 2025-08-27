@@ -58,9 +58,7 @@
 #	(= this.skybox_texture[4] "assets/interstellar_back_flip.png")
 #	(this.skybox.set this.skybox_texture)
 
-	#(dd_clearColour 0.5 0.2 0.3 1.0)
-	#(dd_clearColour 0.351 0.622 0.793 1.0)
-	(dd_clearColour 0.5 0.1 0.2 1.0)
+	(dd_clearColour 0.05 0.03 0.06 1.0)
 
 	# default camera
 	(this.camera_position.Setf 0 1 5)
@@ -72,10 +70,6 @@
 	(= this.mouse_pressed 0)
 	(= this.mouse_pin_x -1)
 	(= this.mouse_pin_y -1)
-
-	# grid
-	(this.grid.set_primitive AVDL_PRIMITIVE_RECTANGLE)
-	(this.grid.set_colour 0.1 0.5 0.1)
 
 	# selection
 	(this.SetSelection 0)
@@ -92,9 +86,9 @@
 	#(avdl_node_print this.hierarchy2)
 	(this.AddCameraToStage)
 
-	(dd_da_initStructRef this.mesh_component_array avdl_component_mesh)
-	(dd_da_initStructRef this.skinned_mesh_component_array avdl_component_mesh)
-	(dd_da_initStructRef this.terrain_component_array avdl_component_terrain)
+	(avdl_da_initStructRef this.mesh_component_array avdl_component_mesh)
+	(avdl_da_initStructRef this.skinned_mesh_component_array avdl_component_mesh)
+	(avdl_da_initStructRef this.terrain_component_array avdl_component_terrain)
 	(this.RefreshHierarchyArrays)
 
 #	(= this.hierarchyUIButtonCount 5)
@@ -249,6 +243,8 @@
 		"uniform sampler2D image;\n"
 		"uniform sampler2DArray image_extra;\n"
 
+		"uniform int terrain_repeat;\n"
+
 		"void main() {\n"
 		# splat map
 		"	vec4 splatmap = avdl_texture(image, outTexCoord);\n"
@@ -267,8 +263,8 @@
 		"	}\n"
 		"	float sum = splatmap[ind1] +splatmap[ind2];\n"
 		"	float textureFactor = splatmap[ind1] /sum;\n"
-		"       vec4 finalCol = mix(avdl_texture(image_extra, vec3(outTexCoord*30.0, ind1)),"
-		"               avdl_texture(image_extra, vec3(outTexCoord*30.0, ind2)), 1.0 -textureFactor"
+		"       vec4 finalCol = mix(avdl_texture(image_extra, vec3(outTexCoord*terrain_repeat, ind1)),"
+		"               avdl_texture(image_extra, vec3(outTexCoord*terrain_repeat, ind2)), 1.0 -textureFactor"
 		"               );\n"
 		"       avdl_frag_color = finalCol;\n"
 		"}\n"
@@ -522,27 +518,13 @@
 #	)
 
 	# grid
-	(for (def int i 0) (< i 50) (= i (+ i 1))
-	(for (def int j 0) (< j 50) (= j (+ j 1))
-		(group
-		(dd_matrix_push)
-		(dd_translatef
-			(+ -5 (* i 2))
-			-1
-			(+ -5 (* j 2))
-		)
-		(dd_rotatef -90 1 0 0)
-		#(dd_scalef 10 10 10)
-		(this.grid.draw)
-		(dd_matrix_pop)
-		)
-	))
+	(this.grid.draw)
 
 	# meshes
-	(for (int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
+	(for (int i 0) (< i (avdl_da_count this.mesh_component_array)) (+= i 1) {
 
 		(def ref avdl_component_mesh mesh)
-		(= mesh (dd_da_getDeref this.mesh_component_array i))
+		(= mesh (avdl_da_getDeref this.mesh_component_array i))
 
 		(def ref avdl_node node)
 		(= node (mesh.GetNode))
@@ -560,10 +542,10 @@
 	})
 
 	# skinned meshes
-	(for (int i 0) (< i (dd_da_count this.skinned_mesh_component_array)) (+= i 1) {
+	(for (int i 0) (< i (avdl_da_count this.skinned_mesh_component_array)) (+= i 1) {
 
 		(def ref avdl_component_skinned_mesh mesh)
-		(= mesh (dd_da_getDeref this.skinned_mesh_component_array i))
+		(= mesh (avdl_da_getDeref this.skinned_mesh_component_array i))
 
 		(def ref avdl_node node)
 		(= node (mesh.GetNode))
@@ -599,12 +581,12 @@
 		(dd_matrix_pop)
 	})
 
-	#(log "terrains: %d" (dd_da_count this.terrain_component_array))
+	#(log "terrains: %d" (avdl_da_count this.terrain_component_array))
 	# terrains
-	(for (int i 0) (< i (dd_da_count this.terrain_component_array)) (+= i 1) {
+	(for (int i 0) (< i (avdl_da_count this.terrain_component_array)) (+= i 1) {
 
 		(def ref avdl_component_terrain terrain)
-		(= terrain (dd_da_getDeref this.terrain_component_array i))
+		(= terrain (avdl_da_getDeref this.terrain_component_array i))
 
 		(def ref avdl_node node)
 		(= node (terrain.GetNode))
@@ -762,10 +744,10 @@
 #		)
 #
 #		# meshes
-#		(for (int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
+#		(for (int i 0) (< i (avdl_da_count this.mesh_component_array)) (+= i 1) {
 #	
 #			(def ref avdl_component_mesh mesh)
-#			(= mesh (dd_da_getDeref this.mesh_component_array i))
+#			(= mesh (avdl_da_getDeref this.mesh_component_array i))
 #	
 #			(def ref avdl_node node)
 #			(= node (mesh.GetNode mesh))
@@ -1061,9 +1043,9 @@
 	(= min 100)
 	#(this.SetSelection 0)
 
-	(for (def int i 0) (< i (dd_da_count this.mesh_component_array)) (+= i 1) {
+	(for (def int i 0) (< i (avdl_da_count this.mesh_component_array)) (+= i 1) {
 		(def ref avdl_component_mesh mesh)
-		(= mesh (dd_da_getDeref this.mesh_component_array i))
+		(= mesh (avdl_da_getDeref this.mesh_component_array i))
 
 		(def ref avdl_node node)
 		(= node (mesh.GetNode))
@@ -1090,9 +1072,9 @@
 #		)
 	})
 
-	(for (def int i 0) (< i (dd_da_count this.skinned_mesh_component_array)) (+= i 1) {
+	(for (def int i 0) (< i (avdl_da_count this.skinned_mesh_component_array)) (+= i 1) {
 		(def ref avdl_component_skinned_mesh mesh)
-		(= mesh (dd_da_getDeref this.skinned_mesh_component_array i))
+		(= mesh (avdl_da_getDeref this.skinned_mesh_component_array i))
 
 		(def ref avdl_node node)
 		(= node (mesh.GetNode))
@@ -1263,14 +1245,14 @@
 })
 
 (class_function world_editor void RefreshHierarchyArrays () {
-	(dd_da_empty this.mesh_component_array)
-	(dd_da_empty this.skinned_mesh_component_array)
-	(dd_da_empty this.terrain_component_array)
+	(avdl_da_empty this.mesh_component_array)
+	(avdl_da_empty this.skinned_mesh_component_array)
+	(avdl_da_empty this.terrain_component_array)
         (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array avdl_component_mesh)
         (avdl_node_AddComponentsToArray this.hierarchy2 this.skinned_mesh_component_array avdl_component_skinned_mesh)
         (avdl_node_AddComponentsToArray this.hierarchy2 this.terrain_component_array avdl_component_terrain)
-	#(log "add components to array %d %d" (dd_da_count this.mesh_component_array) (dd_da_count this.terrain_component_array))
-	(log "add skinned components to array %d" (dd_da_count this.skinned_mesh_component_array))
+	#(log "add components to array %d %d" (avdl_da_count this.mesh_component_array) (avdl_da_count this.terrain_component_array))
+	(log "add skinned components to array %d" (avdl_da_count this.skinned_mesh_component_array))
 })
 
 (class_function world_editor void SetSelection {avdl_node newSelection} {

@@ -1,4 +1,5 @@
 (include "ui_button.ddh")
+(include "grid.ddh")
 
 # visual editor
 (class world_editor dd_world
@@ -35,15 +36,15 @@
 	(int walksLeft)
 
 	# default grid
-	(def avdl_mesh grid)
+	(def Grid grid)
 
 	# test hierarchy
 	(def avdl_node hierarchy)
 	(def ref avdl_node hierarchy2)
 
-	(def dd_dynamic_array mesh_component_array)
-	(def dd_dynamic_array skinned_mesh_component_array)
-	(def dd_dynamic_array terrain_component_array)
+	(def avdl_dynamic_array mesh_component_array)
+	(def avdl_dynamic_array skinned_mesh_component_array)
+	(def avdl_dynamic_array terrain_component_array)
 
 	# terrain shader
 	(def avdl_program terrain_shader)

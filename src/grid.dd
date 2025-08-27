@@ -1,0 +1,49 @@
+(include "grid.ddh")
+
+# Initialise the mesh with a primitive box that stretches to resemble a line
+(class_function Grid void create () {
+	(this.mesh.set_primitive AVDL_PRIMITIVE_BOX)
+	(this.mesh.set_colour 0.25 0.23 0.26)
+})
+
+(class_function Grid void clean () {
+})
+
+(class_function Grid void draw () {
+	(for (int x 0) (<= x 50) (+= x 1) {
+		(dd_matrix_push)
+		(dd_translatef
+			(+ -25 (* x 1))
+			-1
+			0
+		)
+		(dd_rotatef -90 1 0 0)
+		(dd_scalef 0.01 50 0.01)
+		(if (== (% x 5) 0)
+			(dd_scalef 3 1 3)
+		)
+		(if (== x 25)
+			(dd_scalef 2 1 2)
+		)
+		(this.mesh.draw)
+		(dd_matrix_pop)
+	})
+	(for (int y 0) (<= y 50) (+= y 1) {
+		(dd_matrix_push)
+		(dd_translatef
+			0
+			-1
+			(+ -25 (* y 1))
+		)
+		(dd_rotatef -90 1 0 0)
+		(dd_scalef 50 0.01 0.01)
+		(if (== (% y 5) 0)
+			(dd_scalef 1 3 3)
+		)
+		(if (== y 25)
+			(dd_scalef 1 2 2)
+		)
+		(this.mesh.draw)
+		(dd_matrix_pop)
+	})
+})

@@ -1,0 +1,10 @@
+
+# Draws a default grid, to help navigate the 3D world
+(class Grid 0 {
+	(def avdl_mesh mesh)
+
+	(function void create ())
+	(function void clean ())
+
+	(function void draw ())
+})

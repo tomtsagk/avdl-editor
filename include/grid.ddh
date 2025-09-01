@@ -2,6 +2,9 @@
 # Draws a default grid, to help navigate the 3D world
 (class Grid 0 {
 	(def avdl_mesh mesh)
+	(def avdl_mesh mesh_red)
+	(def avdl_mesh mesh_blue)
+	(def avdl_mesh mesh_big)
 
 	(function void create ())
 	(function void clean ())

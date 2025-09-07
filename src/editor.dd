@@ -48,7 +48,9 @@
 
 	# selection
 	(this.SetSelection 0)
-	(this.selected.load (asset "assets/selected.ply" DD_PLY))
+	(this.selected.set_primitive AVDL_PRIMITIVE_BOX_CORNERS)
+	(this.selected.set_colour 0.941 0.914 0.702)
+	(this.selected.SetTypeLine 2.0)
 	(dd_matrix_identity this.selected_matrix)
 
 	(= this.walksForward 0)

@@ -29,35 +29,10 @@
 	(= this.frames_count 0)
 	(this.fps_label.setFont this.font)
 	(this.fps_label.setText "FPS:")
-	#(= this.fps_label.isOnce 1)
 	(this.fps_label_int.setFont this.font)
 	(this.fps_label_int.setTextInt)
 
-	#(for (def int i 0) (< i 6) (= i (+ i 1))
-	#	(= this.skybox_texture[i] "assets/icon_64x64.png")
-	#)
-#	(= this.skybox_texture[0] "assets/skybox_right_flip.png")
-#	(= this.skybox_texture[1] "assets/skybox_left_flip.png")
-#	(= this.skybox_texture[2] "assets/skybox_top_flip.png")
-#	(= this.skybox_texture[3] "assets/skybox_bottom_flip.png")
-#	(= this.skybox_texture[5] "assets/skybox_back_flip.png")
-#	(= this.skybox_texture[4] "assets/skybox_front_flip.png")
-
-#	(= this.skybox_texture[0] "assets/stormydays_right_flip.png")
-#	(= this.skybox_texture[1] "assets/stormydays_left_flip.png")
-#	(= this.skybox_texture[2] "assets/stormydays_top_flep.png")
-#	(= this.skybox_texture[3] "assets/stormydays_bottom_flep.png")
-#	(= this.skybox_texture[5] "assets/stormydays_front_flip.png")
-#	(= this.skybox_texture[4] "assets/stormydays_back_flip.png")
-
-#	(= this.skybox_texture[0] "assets/interstellar_right_flip.png")
-#	(= this.skybox_texture[1] "assets/interstellar_left_flip.png")
-#	(= this.skybox_texture[2] "assets/interstellar_top_flep.png")
-#	(= this.skybox_texture[3] "assets/interstellar_bottom_flip.png")
-#	(= this.skybox_texture[5] "assets/interstellar_front_flip.png")
-#	(= this.skybox_texture[4] "assets/interstellar_back_flip.png")
-#	(this.skybox.set this.skybox_texture)
-
+	# background colour
 	(dd_clearColour 0.05 0.03 0.06 1.0)
 
 	# default camera
@@ -74,6 +49,7 @@
 	# selection
 	(this.SetSelection 0)
 	(this.selected.load (asset "assets/selected.ply" DD_PLY))
+	(dd_matrix_identity this.selected_matrix)
 
 	(= this.walksForward 0)
 	(= this.walksRight 0)
@@ -112,8 +88,8 @@
 	(this.uiButtons[0].SetAnchor 0.0 0.0)
 	(this.uiButtons[0].SetPosition 0.5 -0.5)
 	(this.uiButtons[0].SetSize 1.0 1.0)
-	(this.uiButtons[0].SetOnClick world_editor_SelectNearestObject this)
-	(this.uiButtons[0].SetTitle "Select Nearby")
+	(this.uiButtons[0].SetOnClick world_editor_FocusSelected this)
+	(this.uiButtons[0].SetTitle "Focus")
 
 	# change mode
 	(this.uiButtons[1].SetAnchor 0.0 0.0)
@@ -229,8 +205,8 @@
 
 		"void main() {\n"
 		"       gl_Position = final_position();\n"
-		"       outColour = vec4(0.0, 0.0, 0.0, 0);\n"
-		"       outTexCoord  = texCoord;\n"
+		"	outColour = vec4(colour.rgb, 0.0);\n"
+		"	outTexCoord  = texCoord;\n"
 		"}\n"
 		)
 	)
@@ -241,14 +217,14 @@
 		"AVDL_IN vec2 outTexCoord;\n"
 
 		"uniform sampler2D image;\n"
-		"uniform sampler2DArray image_extra;\n"
+		"uniform sampler2D image_extra_0;\n"
 
 		"uniform int terrain_repeat;\n"
 
 		"void main() {\n"
-		# splat map
+			# splat map
 		"	vec4 splatmap = avdl_texture(image, outTexCoord);\n"
-		"	splatmap.a = 0;\n"
+		"	splatmap.a = 0.0;\n"
 		"	int ind1 = 3;\n"
 		"	int ind2 = 3;\n"
 		"	for (int i = 0; i < 3; i++) {\n"
@@ -263,10 +239,25 @@
 		"	}\n"
 		"	float sum = splatmap[ind1] +splatmap[ind2];\n"
 		"	float textureFactor = splatmap[ind1] /sum;\n"
-		"       vec4 finalCol = mix(avdl_texture(image_extra, vec3(outTexCoord*terrain_repeat, ind1)),"
-		"               avdl_texture(image_extra, vec3(outTexCoord*terrain_repeat, ind2)), 1.0 -textureFactor"
+
+		"	int ind1mod = ind1;\n"
+		"	int ind2mod = ind2;\n"
+		"	while (ind1mod > 2) {\n"
+		"		ind1mod -= 2;\n"
+		"	}\n"
+		"	while (ind2mod > 2) {\n"
+		"		ind2mod -= 2;\n"
+		"	}\n"
+		"	vec2 tileOffset  = vec2(0.0244 +float(ind1mod) *0.5, 0.0244 +(float(ind1 /2) *0.5));\n"
+		"	vec2 tileOffset2 = vec2(0.0244 +float(ind2mod) *0.5, 0.0244 +(float(ind2 /2) *0.5));\n"
+		"	vec2 tileSize = vec2(0.4511, 0.4511);\n"
+		"	vec2 repeatUV = fract(outTexCoord *12.0);\n"
+		"	vec2 finalTexCoord = tileOffset +(repeatUV *tileSize);\n"
+		"	vec2 finalTexCoord2 = tileOffset2 +(repeatUV *tileSize);\n"
+		"       vec4 finalCol = mix(avdl_texture(image_extra_0, finalTexCoord),"
+		"               avdl_texture(image_extra_0, finalTexCoord2), 1.0 -textureFactor"
 		"               );\n"
-		"       avdl_frag_color = finalCol;\n"
+		"       avdl_frag_color = gamma_correction(finalCol);\n"
 		"}\n"
 		)
 	)
@@ -293,6 +284,15 @@
 		"}\n"
 		)
 	)
+
+	#(this.test_mesh.load (asset "assets/selected.ply" DD_PLY))
+	(this.test_mesh.set_primitive AVDL_PRIMITIVE_BOX)
+	(this.test_mesh.set_colour 1.0 1.0 1.0)
+	(dd_matrix_identity this.test_matrix)
+
+	(this.test_mesh2.set_primitive AVDL_PRIMITIVE_BOX)
+	(this.test_mesh2.set_colour 1.0 0.8 0.8)
+	(dd_matrix_identity this.test_matrix2)
 
 	)
 )
@@ -490,14 +490,6 @@
 	(dd_matrix_pop)
 
 
-#	# skybox
-#	(dd_matrix_push)
-#	(dd_rotatef (dd_vec3_getX this.camera_rotation) -1 0 0)
-#	(dd_rotatef (dd_vec3_getY this.camera_rotation) 0 1 0)
-#	(this.skybox.draw)
-#	(dd_matrix_pop)
-#	(avdl_graphics_ClearDepth)
-
 	(dd_matrix_push)
 
 	# camera
@@ -575,6 +567,7 @@
 #			(dd_vec4_getZ pos)
 #		)
 		(dd_multMatrixf (this.selected_node.GetGlobalMatrix))
+		(dd_multMatrixf this.selected_matrix)
 		(this.selected_program.useProgram)
 		(this.selected.draw)
 		(avdl_useProgram 0)
@@ -602,6 +595,16 @@
 		(avdl_useProgram 0)
 		(dd_matrix_pop)
 	})
+
+	(dd_matrix_push)
+	(dd_multMatrixf this.test_matrix)
+	(this.test_mesh.draw)
+	(dd_matrix_pop)
+
+	(dd_matrix_push)
+	(dd_multMatrixf this.test_matrix2)
+	(this.test_mesh2.draw)
+	(dd_matrix_pop)
 
 	# camera pop
 	(dd_matrix_pop)
@@ -654,248 +657,118 @@
 #		(this.scrollHierarchy[i].mouse_input button type)
 #	})
 
-#	# test ray
-#	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN)) {
-#		(log "mouse x y: %d %d" (dd_mouse_x) (dd_mouse_y))
+	# test ray
+	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN)) {
+
+		# get camera ray based on mouse click (camera space)
+		(def avdl_ray3 ray)
+		(avdl_screen_ScreenPositionToRay (dd_mouse_x) (dd_mouse_y) ray)
+
+		#(dd_matrix_identity this.test_matrix)
+		#(dd_matrix_copy this.test_matrix (this.camera_node.GetGlobalMatrix))
+		#(dd_matrix_translate this.test_matrix (finalPosition.X) (finalPosition.Y) (finalPosition.Z))
+
+		# prepare selection data
+		(def ref avdl_node newSelection)
+		(= newSelection 0)
+		(float newSelectionDistance)
+		(float closestObject)
+
+		#(int j)
+		#(= j 0)
+		#(log "clicked on triangle!")
+		# meshes
+		(for (int i 0) (< i (avdl_da_count this.mesh_component_array)) (+= i 1) {
+
+			#(log "check i: %d" i)
+			#(+= j 1)
+			#(if (> j 1) {
+				#(break)
+			#})
+
+			#(log "check tree")
+
+			(def ref avdl_component_mesh mesh)
+			(= mesh (avdl_da_getDeref this.mesh_component_array i))
+
+			(def ref avdl_node node)
+			(= node (mesh.GetNode))
+
+			# mesh's bounding box
+			(def avdl_vec3 boundsCenter)
+			(def avdl_vec3 boundsExtend)
+			(boundsCenter.Set (mesh.GetBoundsCenter))
+			(boundsExtend.Set (mesh.GetBoundsExtend))
+
+			# create a local ray in the object's local space
+			(def avdl_vec3 rayPosition2)
+			(def avdl_vec3 rayDirection2)
+			(rayPosition2.Set (ray.GetPosition))
+			(rayPosition2.MultiplyMatrix (this.camera_node.GetGlobalMatrix) 1)
+			(rayPosition2.MultiplyMatrix (node.GetGlobalInverseMatrix) 1)
+
+			(rayDirection2.Set (ray.GetDirection))
+			(rayDirection2.MultiplyMatrix (this.camera_node.GetGlobalNormalMatrix) 0)
+			(rayDirection2.MultiplyMatrix (node.GetGlobalNormalInverseMatrix) 0)
+
+			(def avdl_ray3 ray2)
+			(ray2.SetPosition rayPosition2)
+			(ray2.SetDirection rayDirection2)
+
+			# keep track of the closest object, based on the ray's distance fromm the center in the mesh's local space
+			(if (|| (< closestObject 0) (< (rayPosition2.Magnitude) closestObject)) {
+				(= closestObject (rayPosition2.Magnitude))
+			})
+
+			# create aabb based on the mesh's bounding box
+			(def avdl_collider_aabb aabb)
+			(aabb.setMin
+				(- (boundsCenter.X) (boundsExtend.X))
+				(- (boundsCenter.Y) (boundsExtend.Y))
+				(- (boundsCenter.Z) (boundsExtend.Z))
+			)
+			(aabb.setMax
+				(+ (boundsCenter.X) (boundsExtend.X))
+				(+ (boundsCenter.Y) (boundsExtend.Y))
+				(+ (boundsCenter.Z) (boundsExtend.Z))
+			)
+
+#			(int isInFrontOfCamera 0)
+#			(for (int j 0) (< j 6) (+= j 1) {
+#				(if (< (planeCenter2.Z) 0) {
+#					(= isInFrontOfCamera 1)
+#				})
+#			})
 #
-#		# convert mouse coordinates to float
-#		(def float mouseX)
-#		(def float mouseY)
-#		(= mouseX (dd_mouse_x))
-#		(= mouseY (dd_mouse_y))
-#
-#		(def dd_vec4 ndc)
-#		(dd_vec4_set ndc 
-#			(- (* (/ mouseX (dd_window_width )) 2.0) 1.0)
-#			(- (* (/ mouseY (dd_window_height)) 2.0) 1.0)
-#			#0
-#			#0
-#			1
-#			1
-#		)
-#		#(log "ndc x y z: %f %f %f" ndcX ndcY ndcZ)
-#		(log "ndc x y z: %f %f %f"
-#			(dd_vec4_getX ndc)
-#			(dd_vec4_getY ndc)
-#			(dd_vec4_getZ ndc)
-#		)
-#
-#		# get inverse perspective
-#		(def dd_matrix inversePerspective)
-#		(dd_matrix_copy inversePerspective dd_matrix_Perspective)
-#		(dd_matrix_inverse inversePerspective)
-#
-#		(dd_vec4_multiply ndc inversePerspective)
-#		(log "ndc after perspective x y z w: %f %f %f %f"
-#			(dd_vec4_getX ndc)
-#			(dd_vec4_getY ndc)
-#			(dd_vec4_getZ ndc)
-#			(dd_vec4_getW ndc)
-#		)
-#		(dd_vec4_set ndc
-#			(dd_vec4_getX ndc)
-#			(* (dd_vec4_getY ndc) -1)
-#			-1
-#			1
-#		)
-##		(log "ndc after set x y z w: %f %f %f %f"
-##			(dd_vec4_getX ndc)
-##			(dd_vec4_getY ndc)
-##			(dd_vec4_getZ ndc)
-##			(dd_vec4_getW ndc)
-##		)
-#		(dd_vec4_multiply ndc (this.camera_node.GetGlobalNormalMatrix))
-#		#(dd_vec4_multiplyFloat ndc (/ 1 (dd_vec4_getW ndc)))
-#		#(dd_vec4_normalise ndc)
-#
-#		(def dd_vec3 ndc_v3)
-#		(dd_vec3_setf ndc_v3
-#			(dd_vec4_getX ndc)
-#			(dd_vec4_getY ndc)
-#			(dd_vec4_getZ ndc)
-#		)
-#		(dd_vec3_normalise ndc_v3)
-#		(dd_vec4_set ndc
-#			(dd_vec4_getX ndc)
-#			(dd_vec4_getY ndc)
-#			(dd_vec4_getZ ndc)
-#			0
-#		)
-#
-#		(log "ndc result x y z w: %f %f %f %f"
-#			(dd_vec4_getX ndc)
-#			(dd_vec4_getY ndc)
-#			(dd_vec4_getZ ndc)
-#			(dd_vec4_getW ndc)
-#		)
-#		(log "ndc_v3 result x y z: %f %f %f"
-#			(dd_vec3_getX ndc_v3)
-#			(dd_vec3_getY ndc_v3)
-#			(dd_vec3_getZ ndc_v3)
-#		)
-#
-#		(def dd_vec4 cam_pos)
-#		(dd_vec4_set cam_pos 0 0 0 1)
-#		(dd_vec4_multiply cam_pos (this.camera_node.GetGlobalMatrix))
-#		(log "cam position: %f %f %f"
-#			(dd_vec3_getX cam_pos)
-#			(dd_vec3_getY cam_pos)
-#			(dd_vec3_getZ cam_pos)
-#		)
-#
-#		# meshes
-#		(for (int i 0) (< i (avdl_da_count this.mesh_component_array)) (+= i 1) {
-#	
-#			(def ref avdl_component_mesh mesh)
-#			(= mesh (avdl_da_getDeref this.mesh_component_array i))
-#	
-#			(def ref avdl_node node)
-#			(= node (mesh.GetNode mesh))
-#	
-#			(def dd_vec4 sphere_center)
-#			(dd_vec4_set sphere_center 0 0 0 1)
-#			(dd_vec4_multiply sphere_center (node.GetGlobalMatrix node))
-#			(float sphere_radius)
-#			(= sphere_radius 0.5)
-#
-#			(log "sphere center: %f %f %f"
-#				(dd_vec3_getX sphere_center)
-#				(dd_vec3_getY sphere_center)
-#				(dd_vec3_getZ sphere_center)
-#			)
-#	
-#			(def dd_vec4 length)
-#			(dd_vec4_setVec4 length cam_pos)
-#			(dd_vec4_substract length sphere_center)
-#	
-#			(def dd_vec4 length2)
-#			(dd_vec4_setVec4 length2 length)
-#			(dd_vec4_substractFloat length2 (* sphere_radius sphere_radius))
-#	
-#			(float b)
-#			(float c)
-#			(= b (dd_vec4_dot ndc length))
-#			(= c (- (dd_vec4_dot length length) (* sphere_radius sphere_radius)))
-#	
-#			(float result)
-#			(= result (- (* b b) c))
-#	
-#			(log "b c: %f %f" b c)
-#			(log "result: %f" result)
-#	
-#			(if (< result 0) {
-#				(log "no interaction")
-#			}
-#			(> result 0) {
-#				(log "two interactions")
-#				(= this.selected_node node)
-#			}
-#			{
-#				(log "one interaction")
-#				(= this.selected_node node)
-#			}
-#			)
-##			(dd_matrix_push)
-##			(dd_multMatrixf (node.GetGlobalMatrix node))
-##			(if (== node this.selected_node)
-##				(this.selected.draw)
-##			)
-##			(mesh.draw mesh)
-##			(dd_matrix_pop)
-#		})
-#
-##		(def dd_vec4 sphere_center)
-##		(dd_vec4_set sphere_center 0 0 0 1)
-##		(float sphere_radius)
-##		(= sphere_radius 1.0)
-##
-##		(def dd_vec4 length)
-##		(dd_vec4_setVec4 length cam_pos)
-##		(dd_vec4_substract length sphere_center)
-##
-##		(def dd_vec4 length2)
-##		(dd_vec4_setVec4 length2 length)
-##		(dd_vec4_substractFloat length2 (* sphere_radius sphere_radius))
-##
-##		(float b)
-##		(float c)
-##		(= b (dd_vec4_dot ndc length))
-##		(= c (- (dd_vec4_dot length length2)))
-##
-##		(float result)
-##		(= result (- (* b b) c))
-##
-##		(log "b c: %f %f" b c)
-##		(log "result: %f" result)
-##
-##		(if (< result 0) {
-##			(log "no interaction")
-##		}
-##		(> result 0) {
-##			(log "two interactions")
-##		}
-##		{
-##			(log "one interaction")
-##		}
-##		)
-#
-##		(def dd_vec4 length)
-##		(dd_vec4_set length
-##			(dd_vec4_getX cam_pos)
-##			(dd_vec4_getY cam_pos)
-##			(dd_vec4_getZ cam_pos)
-##			(dd_vec4_getW cam_pos)
-##		)
-##		(dd_vec4_substract length sphere_center)
-##		(log "length: %f %f %f"
-##			(dd_vec3_getX length)
-##			(dd_vec3_getY length)
-##			(dd_vec3_getZ length)
-##		)
-##
-##		(float a)
-##		(float b)
-##		(float c)
-##		(= a (dd_vec4_dot ndc ndc)) # dot rayDir rayDir
-##		(= b (* 2.0 (dd_vec4_dot cam_pos sphere_center)))
-##		(= c (- (dd_vec4_dot length length) (* sphere_radius sphere_radius)))
-##
-##		(float discriminant)
-##		(= discriminant (- (* b b) (* 4 a c)))
-##
-##		(if (< discriminant 0) {
-##			(log "no intersection: %f" discriminant)
-##		}
-##		{
-##			(float sqrtDiscriminant)
-##			(= sqrtDiscriminant (dd_math_sqrt discriminant))
-##			(float t1)
-##			(float t2)
-##			(= t1 (/ (- (* b -1) sqrtDiscriminant) (* 2.0 a)))
-##			(= t1 (/ (+ (* b -1) sqrtDiscriminant) (* 2.0 a)))
-##			(log "intersection: %f %f" t1 t2)
-##		})
-#
-#
-##		Vector3 L = subtract(rayOrigin, sphereCenter);
-##		    
-##		float a = dot(rayDir, rayDir);  // Should be 1 if rayDir is normalized
-##		float b = 2.0f * dot(rayDir, L);
-##		float c = dot(L, L) - (radius * radius);
-##				    
-##		float discriminant = (b * b) - (4 * a * c);
-##					    
-##		if (discriminant < 0) {
-##			return false; // No intersection
-##		}
-##
-##		// Compute the two possible intersection times
-##		float sqrtDiscriminant = sqrtf(discriminant);
-##		*t1 = (-b - sqrtDiscriminant) / (2.0f * a);
-##		*t2 = (-b + sqrtDiscriminant) / (2.0f * a);
-##
-##		return true;
-#	})
+#			(if (== isInFrontOfCamera 0) {
+#				#(log "not in front of camera: %s" (node.GetName))
+#				(continue)
+#			})
+
+			(if (ray2.CollisionWithAABB aabb) {
+				#(log "collision with aabb")
+				(if (== newSelection 0) {
+					(= newSelection node)
+					(= newSelectionDistance closestObject)
+				}
+				(< closestObject newSelectionDistance) {
+					(= newSelection node)
+					(= newSelectionDistance closestObject)
+				})
+				#(log "clicked on something!")
+				#(this.SetSelection node)
+				#(break)
+			})
+
+		})
+
+		# closest object that was clicked
+		#(if newSelection {
+		#	(this.SetSelection newSelection)
+		#})
+		(this.SetSelection newSelection)
+
+	})
 
 	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN))
 		(group
@@ -1101,6 +974,47 @@
 #		)
 	})
 })
+
+(class_function world_editor void FocusSelected () {
+	(log "focus selected object")
+
+	(if (== this.selected_node 0) {
+		(log "no node to focus on")
+		(return)
+	})
+
+	(if (|| (== this.camera_node 0) (== this.camera_transform2 0)) {
+		(log "no camera node")
+		(return)
+	})
+
+	(def avdl_vec3 desiredPosition)
+	(desiredPosition.Setf 0 0 -5)
+	(desiredPosition.MultiplyMatrix (this.camera_node.GetGlobalMatrix) 1)
+
+	(def avdl_vec3 currentPosition)
+	(currentPosition.Setf 0 0 0)
+	(currentPosition.MultiplyMatrix (this.selected_node.GetGlobalMatrix) 1)
+
+	(def avdl_vec3 difference)
+	(difference.Set currentPosition)
+	(difference.Subtract desiredPosition)
+
+	(def avdl_vec3 camPos)
+	(camPos.Set (this.camera_transform2.GetPosition))
+
+	(camPos.Setf
+		(+ (camPos.X) (difference.X))
+		(+ (camPos.Y) (difference.Y))
+		(+ (camPos.Z) (difference.Z))
+	)
+	(camPos.Print)
+	(this.camera_transform2.SetPosition camPos)
+
+	#(log "focus position:")
+	#(currentPosition.Print)
+	#(difference.Print)
+})
 #(class_function world_editor void HierarchyScrollUp () {
 #	(+= this.hierarchyOffsetY 0.5)
 #	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
@@ -1257,8 +1171,24 @@
 
 (class_function world_editor void SetSelection {avdl_node newSelection} {
 	(= this.selected_node newSelection)
-	(if newSelection
+	(if newSelection {
 		(this.uiButtons[14].SetTitle (this.selected_node.GetName))
+
+		# if selected something with a mesh, scale selection graphic to size of mesh
+		(def ref avdl_component_mesh mesh)
+		(= mesh (newSelection.GetComponent avdl_component_mesh))
+		(if mesh {
+			(def avdl_vec3 boundsCenter)
+			(def avdl_vec3 boundsExtend)
+			(boundsCenter.Set (mesh.GetBoundsCenter))
+			(boundsExtend.Set (mesh.GetBoundsExtend))
+
+			(dd_matrix_identity this.selected_matrix)
+			(dd_matrix_translate this.selected_matrix (boundsCenter.X) (boundsCenter.Y) (boundsCenter.Z))
+			(dd_matrix_scale this.selected_matrix (boundsExtend.X) (boundsExtend.Y) (boundsExtend.Z))
+			(dd_matrix_scale this.selected_matrix 2 2 2)
+		})
+	}
 		(this.uiButtons[14].SetTitle "N/A")
 	)
 })

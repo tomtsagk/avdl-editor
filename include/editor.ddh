@@ -52,7 +52,14 @@
 	# selected
 	(def ref avdl_node selected_node)
 	(def avdl_mesh selected)
+	(def dd_matrix selected_matrix)
 	(def avdl_program selected_program)
+
+	(def avdl_mesh test_mesh)
+	(def dd_matrix test_matrix)
+
+	(def avdl_mesh test_mesh2)
+	(def dd_matrix test_matrix2)
 
 	# hierarchy UI
 #	(float hierarchyOffsetY)
@@ -82,6 +89,7 @@
 	(function void SelectNearestObject ())
 #	(function void HierarchyScrollUp ())
 #	(function void HierarchyScrollDown ())
+	(function void FocusSelected ())
 
 	(function void NextMode ())
 	(function void SaveScene ())

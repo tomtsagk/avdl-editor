@@ -36,15 +36,13 @@
 	(dd_clearColour 0.05 0.03 0.06 1.0)
 
 	# default camera
-	(this.camera_position.Setf 0 1 5)
-	(this.camera_rotation.Setf 0 0 0)
-
-	(dd_matrix_identity this.camera_transform)
-	(dd_matrix_identity this.camera_transform_rot)
-
+	(= this.mouse_is_click 0)
 	(= this.mouse_pressed 0)
 	(= this.mouse_pin_x -1)
 	(= this.mouse_pin_y -1)
+	(= this.mouse_original_pin_x -1)
+	(= this.mouse_original_pin_y -1)
+	(= this.camera_follows 0)
 
 	# selection
 	(this.SetSelection 0)
@@ -90,7 +88,7 @@
 	(this.uiButtons[0].SetAnchor 0.0 0.0)
 	(this.uiButtons[0].SetPosition 0.5 -0.5)
 	(this.uiButtons[0].SetSize 1.0 1.0)
-	(this.uiButtons[0].SetOnClick world_editor_FocusSelected this)
+	(this.uiButtons[0].SetOnClick world_editor_PerformFocus this)
 	(this.uiButtons[0].SetTitle "Focus")
 
 	# change mode
@@ -443,12 +441,22 @@
 	})
 
 	# mouse is being pressed
-	(if this.mouse_pressed
-		(group
+	(if this.mouse_pressed {
+
+		# calculate mouse distance from original pin
+		(float diffx)
+		(float diffy)
+
+		# when mouse goes too far, do not register as click
+		(if this.mouse_is_click {
+			(= diffx (- (dd_mouse_x) this.mouse_original_pin_x))
+			(= diffy (- (dd_mouse_y) this.mouse_original_pin_y))
+			(if (|| (> (dd_math_abs diffx) 10) (> (dd_math_abs diffy) 10)) {
+				(= this.mouse_is_click 0)
+			})
+		})
 
 		# calculate mouse distance
-		(def float diffx)
-		(def float diffy)
 		(= diffx (- (dd_mouse_x) this.mouse_pin_x))
 		(= diffy (- (dd_mouse_y) this.mouse_pin_y))
 
@@ -459,8 +467,7 @@
 		(= this.mouse_pin_x (dd_mouse_x))
 		(= this.mouse_pin_y (dd_mouse_y))
 
-		)
-	)
+	})
 
 	(float move_x 0)
 	(float move_z 0)
@@ -469,7 +476,35 @@
 	(if this.walksForward (-= move_z 0.1))
 	(if this.walksBack (+= move_z 0.1))
 
-	(this.ViewTranslate move_x 0 move_z)
+	(if (|| (> move_x 0) (< move_x 0) (> move_z 0) (< move_z 0)) {
+
+		# if camera is moved manually, ignore any camera follow instructions
+		(= this.camera_follows 0)
+
+		(this.ViewTranslate move_x 0 move_z)
+	})
+
+	# camera interpolating to another position
+	(if this.camera_follows {
+		(def avdl_vec3 camPos)
+		(camPos.Set (this.camera_transform.GetPosition))
+
+		(def avdl_vec3 diff)
+		(diff.Set this.camera_follows_position)
+		(diff.Subtract camPos)
+		(diff.Multiply1f 0.2)
+
+		#(log "interpolate: %f" (diff.Magnitude))
+
+		(if (< (diff.Magnitude) 0.001) {
+			(camPos.Set this.camera_follows_position)
+			(= this.camera_follows 0)
+		}
+		{
+			(camPos.Add diff)
+		})
+		(this.camera_transform.SetPosition camPos)
+	})
 
 	)
 ) # update
@@ -659,136 +694,27 @@
 #		(this.scrollHierarchy[i].mouse_input button type)
 #	})
 
-	# test ray
 	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN)) {
 
-		# get camera ray based on mouse click (camera space)
-		(def avdl_ray3 ray)
-		(avdl_screen_ScreenPositionToRay (dd_mouse_x) (dd_mouse_y) ray)
-
-		#(dd_matrix_identity this.test_matrix)
-		#(dd_matrix_copy this.test_matrix (this.camera_node.GetGlobalMatrix))
-		#(dd_matrix_translate this.test_matrix (finalPosition.X) (finalPosition.Y) (finalPosition.Z))
-
-		# prepare selection data
-		(def ref avdl_node newSelection)
-		(= newSelection 0)
-		(float newSelectionDistance)
-		(float closestObject)
-
-		#(int j)
-		#(= j 0)
-		#(log "clicked on triangle!")
-		# meshes
-		(for (int i 0) (< i (avdl_da_count this.mesh_component_array)) (+= i 1) {
-
-			#(log "check i: %d" i)
-			#(+= j 1)
-			#(if (> j 1) {
-				#(break)
-			#})
-
-			#(log "check tree")
-
-			(def ref avdl_component_mesh mesh)
-			(= mesh (avdl_da_getDeref this.mesh_component_array i))
-
-			(def ref avdl_node node)
-			(= node (mesh.GetNode))
-
-			# mesh's bounding box
-			(def avdl_vec3 boundsCenter)
-			(def avdl_vec3 boundsExtend)
-			(boundsCenter.Set (mesh.GetBoundsCenter))
-			(boundsExtend.Set (mesh.GetBoundsExtend))
-
-			# create a local ray in the object's local space
-			(def avdl_vec3 rayPosition2)
-			(def avdl_vec3 rayDirection2)
-			(rayPosition2.Set (ray.GetPosition))
-			(rayPosition2.MultiplyMatrix (this.camera_node.GetGlobalMatrix) 1)
-			(rayPosition2.MultiplyMatrix (node.GetGlobalInverseMatrix) 1)
-
-			(rayDirection2.Set (ray.GetDirection))
-			(rayDirection2.MultiplyMatrix (this.camera_node.GetGlobalNormalMatrix) 0)
-			(rayDirection2.MultiplyMatrix (node.GetGlobalNormalInverseMatrix) 0)
-
-			(def avdl_ray3 ray2)
-			(ray2.SetPosition rayPosition2)
-			(ray2.SetDirection rayDirection2)
-
-			# keep track of the closest object, based on the ray's distance fromm the center in the mesh's local space
-			(if (|| (< closestObject 0) (< (rayPosition2.Magnitude) closestObject)) {
-				(= closestObject (rayPosition2.Magnitude))
-			})
-
-			# create aabb based on the mesh's bounding box
-			(def avdl_collider_aabb aabb)
-			(aabb.setMin
-				(- (boundsCenter.X) (boundsExtend.X))
-				(- (boundsCenter.Y) (boundsExtend.Y))
-				(- (boundsCenter.Z) (boundsExtend.Z))
-			)
-			(aabb.setMax
-				(+ (boundsCenter.X) (boundsExtend.X))
-				(+ (boundsCenter.Y) (boundsExtend.Y))
-				(+ (boundsCenter.Z) (boundsExtend.Z))
-			)
-
-#			(int isInFrontOfCamera 0)
-#			(for (int j 0) (< j 6) (+= j 1) {
-#				(if (< (planeCenter2.Z) 0) {
-#					(= isInFrontOfCamera 1)
-#				})
-#			})
-#
-#			(if (== isInFrontOfCamera 0) {
-#				#(log "not in front of camera: %s" (node.GetName))
-#				(continue)
-#			})
-
-			(if (ray2.CollisionWithAABB aabb) {
-				#(log "collision with aabb")
-				(if (== newSelection 0) {
-					(= newSelection node)
-					(= newSelectionDistance closestObject)
-				}
-				(< closestObject newSelectionDistance) {
-					(= newSelection node)
-					(= newSelectionDistance closestObject)
-				})
-				#(log "clicked on something!")
-				#(this.SetSelection node)
-				#(break)
-			})
-
-		})
-
-		# closest object that was clicked
-		#(if newSelection {
-		#	(this.SetSelection newSelection)
-		#})
-		(this.SetSelection newSelection)
-
-	})
-
-	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN))
-		(group
-
 		# nothing pressed
+		(= this.mouse_is_click 1)
 		(= this.mouse_pressed 1)
 		(= this.mouse_pin_x (dd_mouse_x))
 		(= this.mouse_pin_y (dd_mouse_y))
+		(= this.mouse_original_pin_x (dd_mouse_x))
+		(= this.mouse_original_pin_y (dd_mouse_y))
 
-		)
-	(&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_UP))
-		(group
+	}
+	(&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_UP)) {
+		(if this.mouse_is_click {
+			(this.PerformClick (dd_mouse_x) (dd_mouse_y))
+		})
 		# reset input
+		(= this.mouse_is_click 0)
 		(= this.mouse_pressed 0)
 		(= this.mouse_pin_x -1)
 		(= this.mouse_pin_y -1)
-		)
-	)
+	})
 
 	(if (||
 		(&& (== AVDL_VR 0) (== button 27))
@@ -827,6 +753,10 @@
 		(== type AVDL_INPUT_STATE_UP) {
 			(= this.walksBack 0)
 		})
+	# 'f'
+	(== button 102) {
+		(this.PerformFocus)
+	}
 	# else
 		(group
 		)
@@ -836,30 +766,24 @@
 
 (class_function world_editor void ViewRotate (group float x float y)
 	(group
-	(this.camera_rotation.Addf y x 0)
 	(def avdl_vec3 p)
-	(p.Set (this.camera_transform2.GetRotation))
+	(p.Set (this.camera_transform.GetRotation))
 	(p.Addf y (* x -1) 0)
-	(this.camera_transform2.SetRotation p)
+	(this.camera_transform.SetRotation p)
 	)
 )
 
 (class_function world_editor void ViewTranslate (group float x float y float z)
 	(group
-#	(log "cam rot: %f %f %f"
-#		(dd_vec3_getX this.camera_rotation)
-#		(dd_vec3_getY this.camera_rotation)
-#		(dd_vec3_getZ this.camera_rotation)
-#	)
 
 	(def avdl_vec4 forward)
 	(forward.Setf (* x -1) y z 1)
 	(forward.MultiplyMatrix (this.camera_node.GetGlobalNormalMatrix))
 
 	(def ref avdl_vec3 cam)
-	(= cam (this.camera_transform2.GetPosition))
+	(= cam (this.camera_transform.GetPosition))
 
-	(this.camera_transform2.SetPosition3f
+	(this.camera_transform.SetPosition3f
 		(+ (cam.X) (forward.X))
 		(+ (cam.Y) (forward.Y))
 		(+ (cam.Z) (forward.Z))
@@ -886,8 +810,8 @@
 
 	# camera
 	(= this.camera_node (this.hierarchy.AddChild))
-	(= this.camera_transform2 (this.camera_node.GetLocalTransform))
-	(this.camera_transform2.SetPosition3f 0 3 5)
+	(= this.camera_transform (this.camera_node.GetLocalTransform))
+	(this.camera_transform.SetPosition3f 0 3 5)
 
 	# camera lookat
 	(def ref avdl_node camera_lookat_node)
@@ -977,15 +901,14 @@
 	})
 })
 
-(class_function world_editor void FocusSelected () {
-	(log "focus selected object")
+(class_function world_editor void PerformFocus () {
 
 	(if (== this.selected_node 0) {
 		(log "no node to focus on")
 		(return)
 	})
 
-	(if (|| (== this.camera_node 0) (== this.camera_transform2 0)) {
+	(if (|| (== this.camera_node 0) (== this.camera_transform 0)) {
 		(log "no camera node")
 		(return)
 	})
@@ -1003,15 +926,18 @@
 	(difference.Subtract desiredPosition)
 
 	(def avdl_vec3 camPos)
-	(camPos.Set (this.camera_transform2.GetPosition))
+	(camPos.Set (this.camera_transform.GetPosition))
 
 	(camPos.Setf
 		(+ (camPos.X) (difference.X))
 		(+ (camPos.Y) (difference.Y))
 		(+ (camPos.Z) (difference.Z))
 	)
-	(camPos.Print)
-	(this.camera_transform2.SetPosition camPos)
+	#(camPos.Print)
+
+	(= this.camera_follows 1)
+	(this.camera_follows_position.Set camPos)
+	#(this.camera_transform.SetPosition camPos)
 
 	#(log "focus position:")
 	#(currentPosition.Print)
@@ -1193,4 +1119,116 @@
 	}
 		(this.uiButtons[14].SetTitle "N/A")
 	)
+})
+
+(class_function world_editor void PerformClick {float x float y} {
+
+	# get camera ray based on mouse click (camera space)
+	(def avdl_ray3 ray)
+	(avdl_screen_ScreenPositionToRay x y ray)
+
+	#(dd_matrix_identity this.test_matrix)
+	#(dd_matrix_copy this.test_matrix (this.camera_node.GetGlobalMatrix))
+	#(dd_matrix_translate this.test_matrix (finalPosition.X) (finalPosition.Y) (finalPosition.Z))
+
+	# prepare selection data
+	(def ref avdl_node newSelection)
+	(= newSelection 0)
+	(float newSelectionDistance)
+	(float closestObject)
+
+	#(int j)
+	#(= j 0)
+	#(log "clicked on triangle!")
+	# meshes
+	(for (int i 0) (< i (avdl_da_count this.mesh_component_array)) (+= i 1) {
+
+		#(log "check i: %d" i)
+		#(+= j 1)
+		#(if (> j 1) {
+			#(break)
+		#})
+
+		#(log "check tree")
+
+		(def ref avdl_component_mesh mesh)
+		(= mesh (avdl_da_getDeref this.mesh_component_array i))
+
+		(def ref avdl_node node)
+		(= node (mesh.GetNode))
+
+		# mesh's bounding box
+		(def avdl_vec3 boundsCenter)
+		(def avdl_vec3 boundsExtend)
+		(boundsCenter.Set (mesh.GetBoundsCenter))
+		(boundsExtend.Set (mesh.GetBoundsExtend))
+
+		# create a local ray in the object's local space
+		(def avdl_vec3 rayPosition2)
+		(def avdl_vec3 rayDirection2)
+		(rayPosition2.Set (ray.GetPosition))
+		(rayPosition2.MultiplyMatrix (this.camera_node.GetGlobalMatrix) 1)
+		(rayPosition2.MultiplyMatrix (node.GetGlobalInverseMatrix) 1)
+
+		(rayDirection2.Set (ray.GetDirection))
+		(rayDirection2.MultiplyMatrix (this.camera_node.GetGlobalNormalMatrix) 0)
+		(rayDirection2.MultiplyMatrix (node.GetGlobalNormalInverseMatrix) 0)
+
+		(def avdl_ray3 ray2)
+		(ray2.SetPosition rayPosition2)
+		(ray2.SetDirection rayDirection2)
+
+		# keep track of the closest object, based on the ray's distance fromm the center in the mesh's local space
+		(if (|| (< closestObject 0) (< (rayPosition2.Magnitude) closestObject)) {
+			(= closestObject (rayPosition2.Magnitude))
+		})
+
+		# create aabb based on the mesh's bounding box
+		(def avdl_collider_aabb aabb)
+		(aabb.setMin
+			(- (boundsCenter.X) (boundsExtend.X))
+			(- (boundsCenter.Y) (boundsExtend.Y))
+			(- (boundsCenter.Z) (boundsExtend.Z))
+		)
+		(aabb.setMax
+			(+ (boundsCenter.X) (boundsExtend.X))
+			(+ (boundsCenter.Y) (boundsExtend.Y))
+			(+ (boundsCenter.Z) (boundsExtend.Z))
+		)
+
+#		(int isInFrontOfCamera 0)
+#		(for (int j 0) (< j 6) (+= j 1) {
+#			(if (< (planeCenter2.Z) 0) {
+#				(= isInFrontOfCamera 1)
+#			})
+#		})
+#
+#		(if (== isInFrontOfCamera 0) {
+#			#(log "not in front of camera: %s" (node.GetName))
+#			(continue)
+#		})
+
+		(if (ray2.CollisionWithAABB aabb) {
+			#(log "collision with aabb")
+			(if (== newSelection 0) {
+				(= newSelection node)
+				(= newSelectionDistance closestObject)
+			}
+			(< closestObject newSelectionDistance) {
+				(= newSelection node)
+				(= newSelectionDistance closestObject)
+			})
+			#(log "clicked on something!")
+			#(this.SetSelection node)
+			#(break)
+		})
+
+	})
+
+	# closest object that was clicked
+	#(if newSelection {
+	#	(this.SetSelection newSelection)
+	#})
+	(this.SetSelection newSelection)
+
 })

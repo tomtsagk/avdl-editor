@@ -19,15 +19,18 @@
 	(def float fps_dt)
 
 	# view camera
-	(def avdl_vec3 camera_position)
-	(def avdl_vec3 camera_rotation)
-	(def dd_matrix camera_transform)
-	(def dd_matrix camera_transform_rot)
+	(def int mouse_is_click)
 	(def int mouse_pressed)
+	(def int mouse_original_pin_x)
+	(def int mouse_original_pin_y)
 	(def int mouse_pin_x)
 	(def int mouse_pin_y)
 	(def ref avdl_node camera_node)
-	(def ref avdl_transform camera_transform2)
+	(def ref avdl_transform camera_transform)
+
+	# camera following code
+	(def int camera_follows)
+	(def avdl_vec3 camera_follows_position)
 
 	# camera movements
 	(int walksForward)
@@ -89,7 +92,6 @@
 	(function void SelectNearestObject ())
 #	(function void HierarchyScrollUp ())
 #	(function void HierarchyScrollDown ())
-	(function void FocusSelected ())
 
 	(function void NextMode ())
 	(function void SaveScene ())
@@ -111,6 +113,9 @@
 	(function void RefreshHierarchyArrays ())
 
 	(function void SetSelection {avdl_node newSelection})
+
+	(function void PerformClick {float x float y})
+	(function void PerformFocus ())
 
 	)
 ) # world editor

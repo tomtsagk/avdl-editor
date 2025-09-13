@@ -14,8 +14,9 @@
 	MODE_SCALE_UNIFORM
 )
 
-(class_function world_editor void create ()
-	(group
+(def extern avdl_string startupProject)
+
+(class_function world_editor void create () {
 
 	(avdl_engine_setFPS 120)
 	(avdl_engine_setVSync 1)
@@ -56,10 +57,6 @@
 	(= this.walksBack 0)
 	(= this.walksLeft 0)
 
-	(= this.hierarchy2 (this.hierarchy.AddChild))
-	(avdl_node_JsonToNode "test.json" this.hierarchy2)
-
-	#(avdl_node_print this.hierarchy2)
 	(this.AddCameraToStage)
 
 	(avdl_da_initStructRef this.mesh_component_array avdl_component_mesh)
@@ -84,7 +81,7 @@
 #
 #	(= this.hierarchyOffsetY 0)
 
-	(= this.uiButtonsCount 15)
+	(= this.uiButtonsCount 16)
 	(this.uiButtons[0].SetAnchor 0.0 0.0)
 	(this.uiButtons[0].SetPosition 0.5 -0.5)
 	(this.uiButtons[0].SetSize 1.0 1.0)
@@ -186,6 +183,13 @@
 	(this.uiButtons[14].SetAnchor 0.5 0.0)
 	(this.uiButtons[14].SetPosition 0.0 -0.25)
 	(this.uiButtons[14].SetSize 1.0 0.5)
+
+	# select project
+	(this.uiButtons[15].SetAnchor 0.0 0.0)
+	(this.uiButtons[15].SetPosition 4.5 -0.5)
+	(this.uiButtons[15].SetSize 1.0 1.0)
+	(this.uiButtons[15].SetOnClick world_editor_PerformPrintCurrentProject this)
+	(this.uiButtons[15].SetTitle "Project")
 
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
 		(this.uiButtons[i].SetFont this.font)
@@ -294,8 +298,32 @@
 	(this.test_mesh2.set_colour 1.0 0.8 0.8)
 	(dd_matrix_identity this.test_matrix2)
 
-	)
-)
+	# check project
+	(this.currentProjectRoot.SetMaxCharacters 1024)
+	(this.currentOpenedFile.SetMaxCharacters 1024)
+	(if (startupProject.IsEmpty) {
+
+		# attempt to find local project
+		(def avdl_string mystring)
+		(mystring.SetMaxCharacters 1024)
+		(avdl_filesystem_GetCurrentDirectory mystring)
+		(mystring.cat "/app.avdl")
+
+		# found local project
+		(if (mystring.isValid) {
+			(mystring.empty)
+			(avdl_filesystem_GetCurrentDirectory mystring)
+			(this.SetCurrentProject mystring)
+		})
+		(mystring.clean)
+	}
+	{
+		(this.SetCurrentProject startupProject)
+	})
+
+	(this.console.SetFont this.font)
+
+})
 
 (class_function world_editor void onload ()
 	(group
@@ -506,6 +534,8 @@
 		(this.camera_transform.SetPosition camPos)
 	})
 
+	(this.console.update dt)
+
 	)
 ) # update
 
@@ -662,39 +692,57 @@
 #	})
 #	#(dd_matrix_pop)
 
+	(this.console.draw)
+
 	)
 )
 
-(class_function world_editor void clean ()
-	(group
-	)
-)
+(class_function world_editor void clean () {
+})
 
-(class_function world_editor void input (group int button int type) {
+(class_function world_editor void input {avdl_input input} {
 
-	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN) (> this.mode MODE_NONE)) {
+	(if (== (input.GetButton) AVDL_INPUT_DROPFILE)  {
+		(def ref avdl_string filename)
+		(= filename (input.GetFilename))
+
+		# set current project
+		(if (filename.EndsIn ".avdl") {
+			(this.SetCurrentProject filename)
+		}
+		# open file to edit
+		(filename.EndsIn ".json") {
+			(this.OpenNewFile filename)
+		}
+		# unknown file ?
+		{
+			(log "unknown file dropped: %s" (filename.toCharPtr))
+		})
+	})
+
+	(if (&& (== (input.GetButton) AVDL_INPUT_MOUSE_LEFT) (== (input.GetState) AVDL_INPUT_STATE_DOWN) (> this.mode MODE_NONE)) {
 		(return)
 	})
-	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_UP) (> this.mode MODE_NONE)) {
+	(if (&& (== (input.GetButton) AVDL_INPUT_MOUSE_LEFT) (== (input.GetState) AVDL_INPUT_STATE_UP) (> this.mode MODE_NONE)) {
 		(= this.mode MODE_NONE)
 		(return)
 	})
 
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
-		(if (== button AVDL_INPUT_MOUSE_LEFT) {
-			(if (this.uiButtons[i].mouse_input button type) {
+		(if (== (input.GetButton) AVDL_INPUT_MOUSE_LEFT) {
+			(if (this.uiButtons[i].mouse_input (input.GetButton) (input.GetState)) {
 				(return)
 			})
 		})
 	})
 #	(for (int i 0) (< i this.hierarchyUIButtonCount) (+= i 1) {
-#		(this.hierarchyUIButton[i].mouse_input button type)
+#		(this.hierarchyUIButton[i].mouse_input (input.GetButton) (input.GetState))
 #	})
 #	(for (int i 0) (< i 2) (+= i 1) {
-#		(this.scrollHierarchy[i].mouse_input button type)
+#		(this.scrollHierarchy[i].mouse_input (input.GetButton) (input.GetState))
 #	})
 
-	(if (&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_DOWN)) {
+	(if (&& (== (input.GetButton) AVDL_INPUT_MOUSE_LEFT) (== (input.GetState) AVDL_INPUT_STATE_DOWN)) {
 
 		# nothing pressed
 		(= this.mouse_is_click 1)
@@ -705,7 +753,7 @@
 		(= this.mouse_original_pin_y (dd_mouse_y))
 
 	}
-	(&& (== button AVDL_INPUT_MOUSE_LEFT) (== type AVDL_INPUT_STATE_UP)) {
+	(&& (== (input.GetButton) AVDL_INPUT_MOUSE_LEFT) (== (input.GetState) AVDL_INPUT_STATE_UP)) {
 		(if this.mouse_is_click {
 			(this.PerformClick (dd_mouse_x) (dd_mouse_y))
 		})
@@ -717,44 +765,44 @@
 	})
 
 	(if (||
-		(&& (== AVDL_VR 0) (== button 27))
-		(&& (== AVDL_VR 1) (== button AVDL_INPUT_QUEST2_MENU))
+		(&& (== AVDL_VR 0) (== (input.GetButton) 27))
+		(&& (== AVDL_VR 1) (== (input.GetButton) AVDL_INPUT_QUEST2_MENU))
 		)
 		(avdl_exit)
 	# left arrow or 'a'
-	(|| (== button 1) (== button 97))
-		(if (== type AVDL_INPUT_STATE_DOWN) {
+	(|| (== (input.GetButton) 1) (== (input.GetButton) 97))
+		(if (== (input.GetState) AVDL_INPUT_STATE_DOWN) {
 			(= this.walksLeft 1)
 		}
-		(== type AVDL_INPUT_STATE_UP) {
+		(== (input.GetState) AVDL_INPUT_STATE_UP) {
 			(= this.walksLeft 0)
 		})
 	# right arrow or 'd'
-	(|| (== button 3) (== button 100))
-		(if (== type AVDL_INPUT_STATE_DOWN) {
+	(|| (== (input.GetButton) 3) (== (input.GetButton) 100))
+		(if (== (input.GetState) AVDL_INPUT_STATE_DOWN) {
 			(= this.walksRight 1)
 		}
-		(== type AVDL_INPUT_STATE_UP) {
+		(== (input.GetState) AVDL_INPUT_STATE_UP) {
 			(= this.walksRight 0)
 		})
 	# up arrow or 'w'
-	(|| (== button 2) (== button 119))
-		(if (== type AVDL_INPUT_STATE_DOWN) {
+	(|| (== (input.GetButton) 2) (== (input.GetButton) 119))
+		(if (== (input.GetState) AVDL_INPUT_STATE_DOWN) {
 			(= this.walksForward 1)
 		}
-		(== type AVDL_INPUT_STATE_UP) {
+		(== (input.GetState) AVDL_INPUT_STATE_UP) {
 			(= this.walksForward 0)
 		})
 	# down arrow or 's'
-	(|| (== button 4) (== button 115))
-		(if (== type AVDL_INPUT_STATE_DOWN) {
+	(|| (== (input.GetButton) 4) (== (input.GetButton) 115))
+		(if (== (input.GetState) AVDL_INPUT_STATE_DOWN) {
 			(= this.walksBack 1)
 		}
-		(== type AVDL_INPUT_STATE_UP) {
+		(== (input.GetState) AVDL_INPUT_STATE_UP) {
 			(= this.walksBack 0)
 		})
 	# 'f'
-	(== button 102) {
+	(== (input.GetButton) 102) {
 		(this.PerformFocus)
 	}
 	# else
@@ -964,7 +1012,13 @@
 })
 
 (class_function world_editor void SaveScene () {
-	(avdl_node_NodeToJson this.hierarchy2 "test.json")
+	(if (&& this.fileHierarchy (== (this.currentOpenedFile.IsEmpty) 0)) {
+		(avdl_node_NodeToJson this.fileHierarchy (this.currentOpenedFile.toCharPtr))
+		(this.console.SetText "saved file")
+	}
+	{
+		(this.console.SetText "could not save file")
+	})
 })
 
 (class_function world_editor void TranslateModeX () {
@@ -1090,9 +1144,11 @@
 	(avdl_da_empty this.mesh_component_array)
 	(avdl_da_empty this.skinned_mesh_component_array)
 	(avdl_da_empty this.terrain_component_array)
-        (avdl_node_AddComponentsToArray this.hierarchy2 this.mesh_component_array avdl_component_mesh)
-        (avdl_node_AddComponentsToArray this.hierarchy2 this.skinned_mesh_component_array avdl_component_skinned_mesh)
-        (avdl_node_AddComponentsToArray this.hierarchy2 this.terrain_component_array avdl_component_terrain)
+	(if this.fileHierarchy {
+		(avdl_node_AddComponentsToArray this.fileHierarchy this.mesh_component_array avdl_component_mesh)
+		(avdl_node_AddComponentsToArray this.fileHierarchy this.skinned_mesh_component_array avdl_component_skinned_mesh)
+		(avdl_node_AddComponentsToArray this.fileHierarchy this.terrain_component_array avdl_component_terrain)
+	})
 	#(log "add components to array %d %d" (avdl_da_count this.mesh_component_array) (avdl_da_count this.terrain_component_array))
 	(log "add skinned components to array %d" (avdl_da_count this.skinned_mesh_component_array))
 })
@@ -1119,6 +1175,42 @@
 	}
 		(this.uiButtons[14].SetTitle "N/A")
 	)
+})
+
+(class_function world_editor void SetCurrentProject {avdl_string newProject} {
+	(this.currentProjectRoot.empty)
+	(this.currentProjectRoot.cat (newProject.toCharPtr))
+	(if (this.currentProjectRoot.EndsIn ".avdl") {
+		(this.currentProjectRoot.Dirname)
+	})
+
+	(this.console.SetText (this.currentProjectRoot.toCharPtr))
+})
+
+(class_function world_editor void OpenNewFile {avdl_string newFile} {
+
+	# no project opened, for now skip
+	(if (this.currentProjectRoot.IsEmpty) {
+		(this.console.SetText "No project, can't open file")
+		(return)
+	})
+
+	# not empty, close previous file
+	(if (== (this.currentOpenedFile.IsEmpty) 0) {
+		(if this.fileHierarchy {
+			(this.hierarchy.RemoveChild this.fileHierarchy)
+			(= this.fileHierarchy 0)
+		})
+	})
+
+	(this.currentOpenedFile.empty)
+	(this.currentOpenedFile.cat (newFile.toCharPtr))
+
+	(avdl_log "opening file: %s" (this.currentOpenedFile.toCharPtr))
+	(= this.fileHierarchy (this.hierarchy.AddChild))
+	(avdl_node_JsonToNode (this.currentOpenedFile.toCharPtr) this.fileHierarchy)
+	(this.RefreshHierarchyArrays)
+
 })
 
 (class_function world_editor void PerformClick {float x float y} {
@@ -1231,4 +1323,17 @@
 	#})
 	(this.SetSelection newSelection)
 
+})
+
+(class_function world_editor void PerformFindProject {} {
+	(log "find project")
+})
+
+(class_function world_editor void PerformPrintCurrentProject {} {
+	(if (this.currentProjectRoot.IsEmpty) {
+		(this.console.SetText "No project open")
+	}
+	{
+		(this.console.SetText (this.currentProjectRoot.toCharPtr))
+	})
 })

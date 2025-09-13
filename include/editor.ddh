@@ -1,5 +1,6 @@
 (include "ui_button.ddh")
 (include "grid.ddh")
+(include "console.ddh")
 
 # visual editor
 (class world_editor dd_world
@@ -43,7 +44,7 @@
 
 	# test hierarchy
 	(def avdl_node hierarchy)
-	(def ref avdl_node hierarchy2)
+	(def ref avdl_node fileHierarchy)
 
 	(def avdl_dynamic_array mesh_component_array)
 	(def avdl_dynamic_array skinned_mesh_component_array)
@@ -76,12 +77,19 @@
 	# mode
 	(int mode)
 
+	# project status
+	(def avdl_string currentProjectRoot)
+	(def avdl_string currentOpenedFile)
+
+	# console
+	(def Console console)
+
 	(function override void create ())
 	(function override void onload ())
 	(function override void resize ())
 	(function override void update (group float dt))
 	(function override void draw ())
-	(function override void input (group int button int type))
+	(function override void input {avdl_input input})
 	(function override void clean ())
 
 	(function void ViewRotate (group float x float y))
@@ -113,9 +121,13 @@
 	(function void RefreshHierarchyArrays ())
 
 	(function void SetSelection {avdl_node newSelection})
+	(function void SetCurrentProject {avdl_string newProject})
+	(function void OpenNewFile {avdl_string newFile})
 
 	(function void PerformClick {float x float y})
 	(function void PerformFocus ())
+	(function void PerformFindProject ())
+	(function void PerformPrintCurrentProject ())
 
 	)
 ) # world editor

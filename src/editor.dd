@@ -711,7 +711,7 @@
 			(this.SetCurrentProject filename)
 		}
 		# open file to edit
-		(filename.EndsIn ".json") {
+		(filename.EndsIn ".avdl_node") {
 			(this.OpenNewFile filename)
 		}
 		# unknown file ?

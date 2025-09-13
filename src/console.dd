@@ -1,0 +1,42 @@
+(include "console.ddh")
+
+(class_function Console void create () {
+	(this.line.setAlign DD_STRING3D_ALIGN_LEFT)
+	(= this.timer 0)
+	(= this.visible 0)
+})
+
+(class_function Console void clean () {
+})
+
+(class_function Console void update {float dt} {
+
+	(if (== this.visible 0) (return))
+
+	(-= this.timer (* 1.0 dt))
+	(if (<= this.timer 0.0) {
+		(= this.visible 0)
+	})
+})
+
+(class_function Console void draw () {
+
+	(if (== this.visible 0) (return))
+
+	(dd_matrix_push)
+	(dd_translatef 0 0 -5)
+	(dd_scalef 0.2 0.2 0.2)
+	(this.line.draw)
+	(dd_matrix_pop)
+
+})
+
+(class_function Console void SetText {string text} {
+	(this.line.setText text)
+	(= this.visible 1)
+	(= this.timer 5.0)
+})
+
+(class_function Console void SetFont {avdl_font font} {
+	(this.line.setFont font)
+})

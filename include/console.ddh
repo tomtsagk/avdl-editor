@@ -1,0 +1,17 @@
+
+# Draws a default grid, to help navigate the 3D world
+(class Console 0 {
+
+	(def dd_string3d line)
+	(float timer)
+	(int visible)
+
+	(function void create ())
+	(function void clean ())
+
+	(function void update {float dt})
+	(function void draw ())
+
+	(function void SetText {string text})
+	(function void SetFont {avdl_font font})
+})

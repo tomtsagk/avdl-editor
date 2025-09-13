@@ -3,14 +3,34 @@
 #
 (include "editor.ddh")
 
+(def avdl_string startupProject)
+
 #
 # Initialise the game and its stats
 #
-(function void dd_gameInit ()
-	(group
+(function void dd_gameInit {avdl_dynamic_array args} {
+
+	(avdl_string_create startupProject)
+	(startupProject.SetMaxCharacters 1024)
+
+	# check arguments
+	(for (int i 0) (< i (avdl_da_count args)) (+= i 1) {
+		(def ref avdl_string s)
+		(= s (avdl_da_get args i))
+
+		# found a potential project file
+		#(log "argument found: %s" (s.toCharPtr))
+		(if (&& (s.EndsIn ".avdl") (startupProject.IsEmpty) (avdl_filesystem_DoesFileExist (s.toCharPtr))) {
+			#(log "found project file: %s" (s.toCharPtr))
+			(startupProject.cat (s.toCharPtr))
+		}
+		# else
+		{
+			(log "unknown argument: %s" (s.toCharPtr))
+		})
+	})
 
 	(dd_setGameTitle (multistring "Avdl Editor - v" AVDL_GAME_VERSION))
 	(dd_world_set_default world_editor)
 
-	)
-)
+})

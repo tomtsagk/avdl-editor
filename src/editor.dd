@@ -1195,6 +1195,8 @@
 		(return)
 	})
 
+	(this.SetSelection 0)
+
 	# not empty, close previous file
 	(if (== (this.currentOpenedFile.IsEmpty) 0) {
 		(if this.fileHierarchy {

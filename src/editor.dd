@@ -15,6 +15,7 @@
 )
 
 (def extern avdl_string startupProject)
+(def extern avdl_string startupFile)
 
 (class_function world_editor void create () {
 
@@ -301,8 +302,13 @@
 	# check project
 	(this.currentProjectRoot.SetMaxCharacters 1024)
 	(this.currentOpenedFile.SetMaxCharacters 1024)
-	(if (startupProject.IsEmpty) {
 
+	# startup project provided by argument - has priority
+	(if (== (startupProject.IsEmpty) 0) {
+		(this.SetCurrentProject startupProject)
+	}
+	# no startu project given, check if program started *from* a project directory
+	{
 		# attempt to find local project
 		(def avdl_string mystring)
 		(mystring.SetMaxCharacters 1024)
@@ -310,15 +316,13 @@
 		(mystring.cat "/app.avdl")
 
 		# found local project
-		(if (mystring.isValid) {
+		(if (&& (mystring.isValid) (avdl_filesystem_DoesFileExist mystring)) {
 			(mystring.empty)
 			(avdl_filesystem_GetCurrentDirectory mystring)
 			(this.SetCurrentProject mystring)
 		})
+
 		(mystring.clean)
-	}
-	{
-		(this.SetCurrentProject startupProject)
 	})
 
 	(this.console.SetFont this.font)
@@ -357,6 +361,12 @@
 		(= this.fps_dt (- this.fps_dt 1.0))
 		)
 	)
+
+	# check startup file
+	(if (== (startupFile.IsEmpty) 0) {
+		(this.OpenNewFile startupFile)
+		(startupFile.empty)
+	})
 
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
 		(this.uiButtons[i].update dt)
@@ -1184,6 +1194,14 @@
 		(this.currentProjectRoot.Dirname)
 	})
 
+	# find custom asset path
+	(def avdl_string assetLoc)
+	(assetLoc.SetMaxCharacters 1024)
+	(assetLoc.cat (this.currentProjectRoot.toCharPtr))
+	#(assetLoc.cat "/assets/")
+	(avdl_assetManager_SetCustomAssetLocation assetLoc)
+	(assetLoc.clean)
+
 	(this.console.SetText (this.currentProjectRoot.toCharPtr))
 })
 
@@ -1191,8 +1209,13 @@
 
 	# no project opened, for now skip
 	(if (this.currentProjectRoot.IsEmpty) {
-		(this.console.SetText "No project, can't open file")
-		(return)
+		(def avdl_string mystring)
+		(mystring.SetMaxCharacters 1024)
+		(mystring.cat (newFile.toCharPtr))
+		(mystring.Dirname)
+		(mystring.Dirname)
+		(this.SetCurrentProject mystring)
+		(mystring.clean)
 	})
 
 	(this.SetSelection 0)

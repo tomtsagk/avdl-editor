@@ -4,6 +4,7 @@
 (include "editor.ddh")
 
 (def avdl_string startupProject)
+(def avdl_string startupFile)
 
 #
 # Initialise the game and its stats
@@ -12,6 +13,8 @@
 
 	(avdl_string_create startupProject)
 	(startupProject.SetMaxCharacters 1024)
+	(avdl_string_create startupFile)
+	(startupFile.SetMaxCharacters 1024)
 
 	# check arguments
 	(for (int i 0) (< i (avdl_da_count args)) (+= i 1) {
@@ -23,6 +26,10 @@
 		(if (&& (s.EndsIn ".avdl") (startupProject.IsEmpty) (avdl_filesystem_DoesFileExist (s.toCharPtr))) {
 			#(log "found project file: %s" (s.toCharPtr))
 			(startupProject.cat (s.toCharPtr))
+		}
+		(&& (s.EndsIn ".avdl_node") (startupFile.IsEmpty) (avdl_filesystem_DoesFileExist (s.toCharPtr))) {
+			#(log "startup file: %s" (s.toCharPtr))
+			(startupFile.cat (s.toCharPtr))
 		}
 		# else
 		{

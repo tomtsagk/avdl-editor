@@ -23,7 +23,7 @@
 	(avdl_engine_setVSync 1)
 
 	# default font
-	(this.font.set (asset "assets/nishiki_teki.ttf" DD_PLY) 4)
+	(this.font.set "nishiki_teki.ttf" 4)
 
 	# fps counter
 	(= this.fps 0)

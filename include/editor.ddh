@@ -1,5 +1,6 @@
 (include "ui_button.ddh")
 (include "grid.ddh")
+(include "axis.ddh")
 (include "console.ddh")
 
 # visual editor
@@ -83,6 +84,9 @@
 
 	# console
 	(def Console console)
+
+	# axis arrows
+	(def Axis axis)
 
 	(function override void create ())
 	(function override void onload ())

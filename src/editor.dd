@@ -290,15 +290,6 @@
 		)
 	)
 
-	#(this.test_mesh.load (asset "assets/selected.ply" DD_PLY))
-	(this.test_mesh.set_primitive AVDL_PRIMITIVE_BOX)
-	(this.test_mesh.set_colour 1.0 1.0 1.0)
-	(dd_matrix_identity this.test_matrix)
-
-	(this.test_mesh2.set_primitive AVDL_PRIMITIVE_BOX)
-	(this.test_mesh2.set_colour 1.0 0.8 0.8)
-	(dd_matrix_identity this.test_matrix2)
-
 	# check project
 	(this.currentProjectRoot.SetMaxCharacters 1024)
 	(this.currentOpenedFile.SetMaxCharacters 1024)
@@ -673,15 +664,15 @@
 		(dd_matrix_pop)
 	})
 
-	(dd_matrix_push)
-	(dd_multMatrixf this.test_matrix)
-	(this.test_mesh.draw)
-	(dd_matrix_pop)
+	(avdl_graphics_ClearDepth)
 
-	(dd_matrix_push)
-	(dd_multMatrixf this.test_matrix2)
-	(this.test_mesh2.draw)
-	(dd_matrix_pop)
+	# draw axis
+	(if this.selected_node {
+		(dd_matrix_push)
+		(dd_multMatrixf (this.selected_node.GetGlobalMatrix))
+		(this.axis.draw)
+		(dd_matrix_pop)
+	})
 
 	# camera pop
 	(dd_matrix_pop)
@@ -711,6 +702,26 @@
 })
 
 (class_function world_editor void input {avdl_input input} {
+
+	(= this.axis.camera_node this.camera_node)
+	(= this.axis.selected_node this.selected_node)
+	(if (this.axis.input input) {
+		(if this.selected_node {
+
+			(def ref avdl_transform selectedTransform)
+			(= selectedTransform (this.selected_node.GetLocalTransform))
+
+			(def ref avdl_vec3 selectedPos)
+			(= selectedPos (selectedTransform.GetPosition))
+
+			(selectedTransform.SetPosition3f
+				(+ (selectedPos.X) (this.axis.displacement.X))
+				(+ (selectedPos.Y) (this.axis.displacement.Y))
+				(+ (selectedPos.Z) (this.axis.displacement.Z))
+			)
+		})
+		(return)
+	})
 
 	(if (== (input.GetButton) AVDL_INPUT_DROPFILE)  {
 		(def ref avdl_string filename)
@@ -1174,8 +1185,15 @@
 		(if mesh {
 			(def avdl_vec3 boundsCenter)
 			(def avdl_vec3 boundsExtend)
-			(boundsCenter.Set (mesh.GetBoundsCenter))
-			(boundsExtend.Set (mesh.GetBoundsExtend))
+
+			(if (&& (mesh.GetBoundsCenter) (mesh.GetBoundsExtend)) {
+				(boundsCenter.Set (mesh.GetBoundsCenter))
+				(boundsExtend.Set (mesh.GetBoundsExtend))
+			}
+			{
+				(boundsCenter.Setf 1 1 1)
+				(boundsExtend.Setf 1 1 1)
+			})
 
 			(dd_matrix_identity this.selected_matrix)
 			(dd_matrix_translate this.selected_matrix (boundsCenter.X) (boundsCenter.Y) (boundsCenter.Z))
@@ -1277,6 +1295,10 @@
 		# mesh's bounding box
 		(def avdl_vec3 boundsCenter)
 		(def avdl_vec3 boundsExtend)
+
+		(if (|| (== (mesh.GetBoundsCenter) 0) (== (mesh.GetBoundsExtend) 0)) {
+			(continue)
+		})
 		(boundsCenter.Set (mesh.GetBoundsCenter))
 		(boundsExtend.Set (mesh.GetBoundsExtend))
 

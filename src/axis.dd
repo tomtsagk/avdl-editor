@@ -1,0 +1,193 @@
+(include "axis.ddh")
+
+(class_function Axis void create () {
+	(this.lineX.set_primitive AVDL_PRIMITIVE_LINE)
+	(this.lineX.SetTypeLine (* 1.3 2))
+	(this.lineX.set_colour 1.0 0.0 0.0)
+
+	(this.lineY.set_primitive AVDL_PRIMITIVE_LINE)
+	(this.lineY.SetTypeLine (* 1.3 2))
+	(this.lineY.set_colour 0.0 1.0 0.0)
+
+	(this.lineZ.set_primitive AVDL_PRIMITIVE_LINE)
+	(this.lineZ.SetTypeLine (* 1.3 2))
+	(this.lineZ.set_colour 0.0 0.0 1.0)
+
+	# drag arrows
+	(this.arrows[0].set_primitive AVDL_PRIMITIVE_PYRAMID)
+	(this.arrows[0].set_colour 1 0 0)
+
+	(this.arrows[1].set_primitive AVDL_PRIMITIVE_PYRAMID)
+	(this.arrows[1].set_colour 0 1 0)
+
+	(this.arrows[2].set_primitive AVDL_PRIMITIVE_PYRAMID)
+	(this.arrows[2].set_colour 0 0 1)
+
+	# drag arrow transforms
+	(this.arrowTransforms[0].SetPosition3f 1 0 0)
+	(this.arrowTransforms[0].SetScale3f 0.5 0.5 0.5)
+
+	(this.arrowTransforms[1].SetPosition3f 0 1 0)
+	(this.arrowTransforms[1].SetScale3f 0.5 0.5 0.5)
+
+	(this.arrowTransforms[2].SetPosition3f 0 0 1)
+	(this.arrowTransforms[2].SetScale3f 0.5 0.5 0.5)
+
+	(= this.camera_node 0)
+	(= this.selected_node 0)
+
+	(= this.isDragging 0)
+})
+
+(class_function Axis void clean () {
+})
+
+(class_function Axis int input {avdl_input input} {
+
+	# should always be set
+	(if (|| (== this.camera_node 0) (== this.selected_node 0)) {
+		(return 0)
+	})
+
+	# mouse is being dragged - move selection
+	(if (&& this.isDragging (== (input.GetButton) AVDL_INPUT_MOUSE) (== (input.GetState) AVDL_INPUT_STATE_MOVE)) {
+		(float diffx)
+		(float diffy)
+
+		(= diffx (- (dd_mouse_x) this.mouse_pin_x))
+		(= diffy (- (dd_mouse_y) this.mouse_pin_y))
+
+		(= this.mouse_pin_x (dd_mouse_x))
+		(= this.mouse_pin_y (dd_mouse_y))
+
+		(float val)
+		(= val (* (+ diffx diffy) 0.03))
+		(if (== this.isDragging 1) {
+			(this.displacement.Setf val 0 0)
+		}
+		(== this.isDragging 2) {
+			(this.displacement.Setf 0 val 0)
+		}
+		{
+			(this.displacement.Setf 0 0 val)
+		})
+
+		(return 1)
+	})
+
+	# only left click from here on
+	(if (!= (input.GetButton) AVDL_INPUT_MOUSE_LEFT) {
+		(return 0)
+	})
+
+	# cancel dragging when left click is lifted
+	(if (&& this.isDragging (== (input.GetState) AVDL_INPUT_STATE_UP)) {
+		(= this.isDragging 0)
+	})
+
+	# only just clicked from here on
+	(if (!= (input.GetState) AVDL_INPUT_STATE_DOWN) {
+		(return 0)
+	})
+
+	(float x)
+	(float y)
+	(= x (dd_mouse_x))
+	(= y (dd_mouse_y))
+
+	# get camera ray based on mouse click (camera space)
+	(def avdl_ray3 ray)
+	(avdl_screen_ScreenPositionToRay x y ray)
+
+	# meshes
+	(for (int i 0) (< i 3) (+= i 1) {
+
+		# mesh's bounding box
+		(def avdl_vec3 boundsCenter)
+		(def avdl_vec3 boundsExtend)
+
+		(if (|| (== (this.arrows[i].GetBoundsCenter) 0) (== (this.arrows[i].GetBoundsExtend) 0)) {
+			(return 0)
+		})
+		(boundsCenter.Set (this.arrows[i].GetBoundsCenter))
+		(boundsExtend.Set (this.arrows[i].GetBoundsExtend))
+
+		# create a local ray in the object's local space
+		(def avdl_vec3 rayPosition2)
+		(def avdl_vec3 rayDirection2)
+		(rayPosition2.Set (ray.GetPosition))
+		(rayPosition2.MultiplyMatrix (this.camera_node.GetGlobalMatrix) 1)
+		(rayPosition2.MultiplyMatrix (this.selected_node.GetGlobalInverseMatrix) 1)
+		(rayPosition2.MultiplyMatrix (this.arrowTransforms[i].GetInverseMatrix) 1)
+
+		(rayDirection2.Set (ray.GetDirection))
+		(rayDirection2.MultiplyMatrix (this.camera_node.GetGlobalNormalMatrix) 0)
+		(rayDirection2.MultiplyMatrix (this.selected_node.GetGlobalNormalInverseMatrix) 0)
+		(rayPosition2.MultiplyMatrix (this.arrowTransforms[i].GetNormalInverseMatrix) 0)
+
+		(def avdl_ray3 ray2)
+		(ray2.SetPosition rayPosition2)
+		(ray2.SetDirection rayDirection2)
+
+		# create aabb based on the mesh's bounding box
+		(def avdl_collider_aabb aabb)
+		(aabb.setMin
+			(- (boundsCenter.X) (boundsExtend.X))
+			(- (boundsCenter.Y) (boundsExtend.Y))
+			(- (boundsCenter.Z) (boundsExtend.Z))
+		)
+		(aabb.setMax
+			(+ (boundsCenter.X) (boundsExtend.X))
+			(+ (boundsCenter.Y) (boundsExtend.Y))
+			(+ (boundsCenter.Z) (boundsExtend.Z))
+		)
+
+		(if (ray2.CollisionWithAABB aabb) {
+			(= this.isDragging (+ i 1))
+			(= this.mouse_pin_x (dd_mouse_x))
+			(= this.mouse_pin_y (dd_mouse_y))
+			(this.displacement.Setf 0 0 0)
+			(return 1)
+		})
+
+	})
+
+	(return 0)
+})
+
+(class_function Axis void draw () {
+
+	# line x
+	(dd_matrix_push)
+	(dd_translatef 0.5 0 0)
+	(this.lineX.draw)
+	(dd_matrix_pop)
+
+	# line y
+	(dd_matrix_push)
+	(dd_translatef 0 0.5 0)
+	(dd_rotatef 90 0 0 1)
+	(this.lineY.draw)
+	(dd_matrix_pop)
+
+	# line z
+	(dd_matrix_push)
+	(dd_translatef 0 0 0.5)
+	(dd_rotatef 90 0 1 0)
+	(this.lineZ.draw)
+	(dd_matrix_pop)
+
+	# arrows
+	(for (int i 0) (< i 3) (+= i 1) {
+		(dd_matrix_push)
+		(dd_multMatrixf (this.arrowTransforms[i].GetMatrix))
+		(if (== i 0)
+			(dd_rotatef -90 0 0 1)
+		(== i 2)
+			(dd_rotatef 90 1 0 0)
+		)
+		(this.arrows[i].draw)
+		(dd_matrix_pop)
+	})
+
+})

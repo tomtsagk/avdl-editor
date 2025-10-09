@@ -1,0 +1,30 @@
+
+(class Axis 0 {
+	(def avdl_mesh lineX)
+	(def avdl_mesh lineY)
+	(def avdl_mesh lineZ)
+
+	(def avdl_mesh arrows[3])
+
+	(def avdl_transform transformX_transform)
+	(def avdl_transform transformY_transform)
+	(def avdl_transform transformZ_transform)
+	(def avdl_transform arrowTransforms[3])
+
+	(def ref avdl_node camera_node)
+	(def ref avdl_node selected_node)
+
+	(def avdl_vec3 displacement)
+
+	(int isDragging)
+	(float mouse_pin_x)
+	(float mouse_pin_y)
+	(def avdl_vec3 pinPoint)
+
+	(function void create ())
+	(function void clean ())
+
+	(function int input {avdl_input input})
+
+	(function void draw ())
+})

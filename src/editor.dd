@@ -791,7 +791,7 @@
 		)
 		(avdl_exit)
 	# left arrow or 'a'
-	(|| (== (input.GetButton) 1) (== (input.GetButton) 97))
+	(|| (== (input.GetButton) 1) (== (input.GetButton) 'a'))
 		(if (== (input.GetState) AVDL_INPUT_STATE_DOWN) {
 			(= this.walksLeft 1)
 		}
@@ -799,7 +799,7 @@
 			(= this.walksLeft 0)
 		})
 	# right arrow or 'd'
-	(|| (== (input.GetButton) 3) (== (input.GetButton) 100))
+	(|| (== (input.GetButton) 3) (== (input.GetButton) 'd'))
 		(if (== (input.GetState) AVDL_INPUT_STATE_DOWN) {
 			(= this.walksRight 1)
 		}
@@ -807,7 +807,7 @@
 			(= this.walksRight 0)
 		})
 	# up arrow or 'w'
-	(|| (== (input.GetButton) 2) (== (input.GetButton) 119))
+	(|| (== (input.GetButton) 2) (== (input.GetButton) 'w'))
 		(if (== (input.GetState) AVDL_INPUT_STATE_DOWN) {
 			(= this.walksForward 1)
 		}
@@ -815,15 +815,15 @@
 			(= this.walksForward 0)
 		})
 	# down arrow or 's'
-	(|| (== (input.GetButton) 4) (== (input.GetButton) 115))
+	(|| (== (input.GetButton) 4) (== (input.GetButton) 's'))
 		(if (== (input.GetState) AVDL_INPUT_STATE_DOWN) {
 			(= this.walksBack 1)
 		}
 		(== (input.GetState) AVDL_INPUT_STATE_UP) {
 			(= this.walksBack 0)
 		})
-	# 'f'
-	(== (input.GetButton) 102) {
+	# focus
+	(== (input.GetButton) 'f') {
 		(this.PerformFocus)
 	}
 	# else

@@ -19,8 +19,10 @@
 
 (class_function world_editor void create () {
 
-	(avdl_engine_setFPS 120)
+	(avdl_engine_setFPS 60)
 	(avdl_engine_setVSync 1)
+
+	(= this.fileHierarchy 0)
 
 	# default font
 	(this.font.set "nishiki_teki.ttf" 4)
@@ -45,6 +47,7 @@
 	(= this.mouse_original_pin_x -1)
 	(= this.mouse_original_pin_y -1)
 	(= this.camera_follows 0)
+	(= this.camera_follows2 0)
 
 	# selection
 	(this.SetSelection 0)
@@ -82,7 +85,7 @@
 #
 #	(= this.hierarchyOffsetY 0)
 
-	(= this.uiButtonsCount 16)
+	(= this.uiButtonsCount 17)
 	(this.uiButtons[0].SetAnchor 0.0 0.0)
 	(this.uiButtons[0].SetPosition 0.5 -0.5)
 	(this.uiButtons[0].SetSize 1.0 1.0)
@@ -191,6 +194,13 @@
 	(this.uiButtons[15].SetSize 1.0 1.0)
 	(this.uiButtons[15].SetOnClick world_editor_PerformPrintCurrentProject this)
 	(this.uiButtons[15].SetTitle "Project")
+
+	# possess object
+	(this.uiButtons[16].SetAnchor 0.0 0.0)
+	(this.uiButtons[16].SetPosition 5.5 -0.5)
+	(this.uiButtons[16].SetSize 1.0 1.0)
+	(this.uiButtons[16].SetOnClick world_editor_PerformPossess this)
+	(this.uiButtons[16].SetTitle "Possess")
 
 	(for (int i 0) (< i this.uiButtonsCount) (+= i 1) {
 		(this.uiButtons[i].SetFont this.font)
@@ -509,6 +519,7 @@
 
 		# if camera is moved manually, ignore any camera follow instructions
 		(= this.camera_follows 0)
+		(= this.camera_follows2 0)
 
 		(this.ViewTranslate move_x 0 move_z)
 	})
@@ -533,6 +544,26 @@
 			(camPos.Add diff)
 		})
 		(this.camera_transform.SetPosition camPos)
+	})
+
+	# camera following for rotation
+	(if this.camera_follows2 {
+		(def avdl_vec3 camRot)
+		(camRot.Set (this.camera_transform.GetRotation))
+
+		(def avdl_vec3 diff)
+		(diff.Set this.camera_follows_rotation)
+		(diff.Subtract camRot)
+		(diff.Multiply1f 0.2)
+
+		(if (< (diff.Magnitude) 0.001) {
+			(camRot.Set this.camera_follows_rotation)
+			(= this.camera_follows2 0)
+		}
+		{
+			(camRot.Add diff)
+		})
+		(this.camera_transform.SetRotation camRot)
 	})
 
 	(this.console.update dt)
@@ -1383,4 +1414,59 @@
 	{
 		(this.console.SetText (this.currentProjectRoot.toCharPtr))
 	})
+})
+
+(class_function world_editor void PerformPossess {} {
+
+	(if (== this.selected_node 0) {
+		(log "no node to possess")
+		(return)
+	})
+
+	(if (|| (== this.camera_node 0) (== this.camera_transform 0)) {
+		(log "no camera node during possession")
+		(return)
+	})
+
+	(def avdl_vec3 desiredPosition)
+	(desiredPosition.Setf 0 0 0)
+	(desiredPosition.MultiplyMatrix (this.camera_node.GetGlobalMatrix) 1)
+
+	(def avdl_vec3 desiredRotation)
+	(desiredRotation.Setf 0 0 -1)
+	(desiredRotation.MultiplyMatrix (this.camera_node.GetGlobalNormalMatrix) 0)
+
+	(def avdl_vec3 currentPosition)
+	(currentPosition.Setf 0 0 0)
+	(currentPosition.MultiplyMatrix (this.selected_node.GetGlobalMatrix) 1)
+
+	(def avdl_vec3 difference)
+	(difference.Set currentPosition)
+	(difference.Subtract desiredPosition)
+
+	(def avdl_vec3 camPos)
+	(camPos.Set (this.camera_transform.GetPosition))
+
+	(camPos.Setf
+		(+ (camPos.X) (difference.X))
+		(+ (camPos.Y) (difference.Y))
+		(+ (camPos.Z) (difference.Z))
+	)
+
+	(def avdl_vec3 camRot)
+	(camRot.Set (this.camera_transform.GetRotation))
+	(camRot.Setf
+		(desiredRotation.X)
+		(desiredRotation.Y)
+		(desiredRotation.Z)
+	)
+
+	(= this.camera_follows 1)
+	(= this.camera_follows2 1)
+	(this.camera_follows_position.Set camPos)
+	(this.camera_follows_rotation.Set camRot)
+
+	#(log "possess position:")
+	#(currentPosition.Print)
+	#(difference.Print)
 })

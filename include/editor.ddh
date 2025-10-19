@@ -32,7 +32,9 @@
 
 	# camera following code
 	(def int camera_follows)
+	(def int camera_follows2)
 	(def avdl_vec3 camera_follows_position)
+	(def avdl_vec3 camera_follows_rotation)
 
 	# camera movements
 	(int walksForward)
@@ -132,6 +134,7 @@
 	(function void PerformFocus ())
 	(function void PerformFindProject ())
 	(function void PerformPrintCurrentProject ())
+	(function void PerformPossess ())
 
 	)
 ) # world editor
